@@ -1,0 +1,71 @@
+name: PRO ERP 2.5.11 Tek Seferlik Yayin
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/pro-erp-one-time-publish.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Dogrulanmis son derlemeyi indir
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_url="https://e7dbb714.pro-erp-unal.pages.dev"
+
+          while IFS= read -r -d '' path; do
+            case "$path" in
+              .github/*|.nojekyll|_headers|_redirects)
+                continue
+                ;;
+            esac
+
+            url="$base_url/$path"
+            if [ "$path" = "index.html" ]; then
+              url="$base_url/"
+            fi
+
+            tmp_file="$(mktemp)"
+            status="$(curl -sSL --retry 3 --max-time 120 -o "$tmp_file" -w "%{http_code}" "$url")"
+
+            if [ "$status" != "200" ]; then
+              echo "Indirilemedi: $path (HTTP $status)"
+              rm -f "$tmp_file"
+              exit 1
+            fi
+
+            mkdir -p "$(dirname "$path")"
+            mv "$tmp_file" "$path"
+          done < <(git ls-files -z)
+
+          sed -i 's|<base href="/">|<base href="/pro-erp-unal/">|' index.html
+          touch .nojekyll
+
+      - name: GitHub Pages dosyalarini guncelle
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "Yayin zaten guncel."
+            exit 0
+          fi
+
+          git commit -m "PRO ERP 2.5.11 GitHub Pages yayini"
+          git push
