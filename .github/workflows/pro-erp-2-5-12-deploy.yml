@@ -1,0 +1,41 @@
+name: PRO ERP 2.5.12 yayinla
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".deploy/**"
+      - ".github/workflows/pro-erp-2-5-12-deploy.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Web paketini birlestir ve dogrula
+        shell: bash
+        run: |
+          : > /tmp/pro-erp-web.tar.gz
+          for part in .deploy/part-*; do
+            base64 --decode "$part" >> /tmp/pro-erp-web.tar.gz
+          done
+          echo "3f380e10f143b927ce9a6d2764ab71c0f22953f2dd6e01a4ccf235e00bef05f0  /tmp/pro-erp-web.tar.gz" | sha256sum --check -
+          tar -xzf /tmp/pro-erp-web.tar.gz -C .
+
+      - name: 2.5.12 dosyalarini kaydet
+        shell: bash
+        run: |
+          git rm -r -- .deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "PRO ERP 2.5.12: sifre, ikon ve menu duzeltmeleri"
+          git push
