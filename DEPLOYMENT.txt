@@ -1,1 +1,1 @@
-PRO ERP 2.5.15 production build - unified R/L catalog and persistent per-vehicle deletions.
+PRO ERP 2.5.16 production build - uppercase ASCII part names, persistent R/L naming, independent OEM stock lookup.
