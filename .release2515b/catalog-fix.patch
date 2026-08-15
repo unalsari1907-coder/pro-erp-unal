@@ -1,0 +1,397 @@
+--- a/lib/services/arac_katalog_service.dart
++++ b/lib/services/arac_katalog_service.dart
+@@ -67,8 +67,8 @@
+     'BUJI_KABLOSU': 'Buji Kablosu',
+   };
+ 
+-  // Katalogdaki R/L (Right/Left) alanları ERP'de ayrı Sağ / Sol kayıtları olarak tutulur.
+-  // Böylece her tarafta tek OEM bulunur ve stok eşleştirme tek kod üzerinden güvenilir çalışır.
++  // R/L (Right/Left) katalog alanları ekranda TEK PARÇA olarak gösterilir.
++  // Sağ ve sol OEM'ler aynı parça grubunun altında ayrı OEM satırlarıdır.
+   static const Map<String, String> _rlKategoriAdlari = <String, String>{
+     'ON_AMORTISOR_R_L': 'Ön Amortisör',
+     'ARKA_AMORTISOR_R_L': 'Arka Amortisör',
+@@ -83,21 +83,26 @@
+ 
+   static String _sagKod(String eskiKod) => '${eskiKod}_SAG';
+   static String _solKod(String eskiKod) => '${eskiKod}_SOL';
++  static const String _aractanSilindiIsareti = '__ARACTAN_SILINDI__';
+ 
+-  static Map<String, String> _istenenKategoriAdlari() {
+-    final out = <String, String>{};
+-    for (final entry in _kategoriAdlari.entries) {
+-      final temel = _rlKategoriAdlari[entry.key];
+-      if (temel == null) {
+-        out[entry.key] = entry.value;
+-      } else {
+-        out[_sagKod(entry.key)] = '$temel Sağ';
+-        out[_solKod(entry.key)] = '$temel Sol';
+-      }
++  static String _birlesikKategoriKodu(String kod) {
++    final k = kod.trim();
++    if (k.endsWith('_SAG')) return k.substring(0, k.length - 4);
++    if (k.endsWith('_SOL')) return k.substring(0, k.length - 4);
++    return k;
++  }
++
++  static List<String> _kategoriVaryantlari(String kod) {
++    final temel = _birlesikKategoriKodu(kod);
++    if (_rlKategoriAdlari.containsKey(temel)) {
++      return <String>[temel, _sagKod(temel), _solKod(temel)];
+     }
+-    return out;
++    return <String>[temel];
+   }
+ 
++  static Map<String, String> _istenenKategoriAdlari() =>
++      Map<String, String>.from(_kategoriAdlari);
++
+   static String _norm(String s) {
+     var x = s.trim().toUpperCase();
+     const from = 'ÇĞİÖŞÜÂÊÎÔÛ';
+@@ -727,28 +732,31 @@
+         final rlTemel = _rlKategoriAdlari[entry.key];
+ 
+         if (rlTemel != null) {
+-          // Excel başlığı R/L ise ilk kod Sağ, ikinci kod Sol kabul edilir.
+-          // Kod yoksa iki taraf da boş oluşturulur; kullanıcı daha sonra ERP'den girebilir.
+-          final sagOem = kodlar.isNotEmpty ? kodlar[0] : null;
+-          final solOem = kodlar.length > 1 ? kodlar[1] : null;
+-          inserts.add(<String, dynamic>{
+-            'arac_id': aracId,
+-            'kategori_kodu': _sagKod(entry.key),
+-            'kategori_adi': '$rlTemel Sağ',
+-            'oem_kodu': sagOem,
+-            'ham_deger': sagOem,
+-            'nitelik': sagOem == null && raw.isNotEmpty ? raw : null,
+-            'sira': sira++,
+-          });
+-          inserts.add(<String, dynamic>{
+-            'arac_id': aracId,
+-            'kategori_kodu': _solKod(entry.key),
+-            'kategori_adi': '$rlTemel Sol',
+-            'oem_kodu': solOem,
+-            'ham_deger': solOem,
+-            'nitelik': solOem == null && raw.isNotEmpty ? raw : null,
+-            'sira': sira++,
+-          });
++          // 2.5.15: Sağ / Sol artık iki ayrı parça değildir. Excel'deki tüm
++          // OEM'ler tek R/L parçasının altında ayrı OEM satırları olarak tutulur.
++          if (kodlar.isEmpty) {
++            inserts.add(<String, dynamic>{
++              'arac_id': aracId,
++              'kategori_kodu': entry.key,
++              'kategori_adi': rlTemel,
++              'oem_kodu': null,
++              'ham_deger': raw.isEmpty ? null : raw,
++              'nitelik': raw.isEmpty ? null : raw,
++              'sira': sira++,
++            });
++          } else {
++            for (final kod in kodlar) {
++              inserts.add(<String, dynamic>{
++                'arac_id': aracId,
++                'kategori_kodu': entry.key,
++                'kategori_adi': rlTemel,
++                'oem_kodu': kod,
++                'ham_deger': raw,
++                'nitelik': null,
++                'sira': sira++,
++              });
++            }
++          }
+           continue;
+         }
+ 
+@@ -953,94 +961,29 @@
+         .order('sira');
+     var liste = List<Map<String, dynamic>>.from(res as List);
+ 
+-    // 2.5.4 hızlı yol: Yeni şablonlu araçlarda eski R/L kalıntısı yoksa ve
+-    // standart kalemler tamamsa hiçbir ek sorgu / UPDATE / INSERT yapmadan dön.
+-    // Böylece araç seçimi ve yeni araç sonrası detay açılışı anlık hale gelir.
+-    final hizliMevcutKodlar = liste
+-        .map((e) => _cell(e['kategori_kodu']))
++    // 2.5.15: "Bu Araçtan Sil" kayıtları fiziksel satır silmeye ek olarak
++    // tombstone (istisna) satırı bırakır. Böylece ortak şablon / otomatik tamamlama
++    // aynı parçayı bu araca bir daha geri yükleyemez.
++    final silinenTemelKodlar = liste
++        .where((e) => _cell(e['nitelik']) == _aractanSilindiIsareti)
++        .map((e) => _birlesikKategoriKodu(_cell(e['kategori_kodu'])))
++        .where((e) => e.isNotEmpty)
+         .toSet();
+-    final legacyRlVar = hizliMevcutKodlar.any(_rlKategoriAdlari.containsKey);
+-    final standartEksikVar = _istenenKategoriAdlari().keys.any(
+-      (k) => !hizliMevcutKodlar.contains(k),
+-    );
+-    if (!legacyRlVar && !standartEksikVar) {
+-      return liste;
+-    }
+ 
+-    // Eski R/L kayıtlarını bir kereye mahsus gerçek Sağ / Sol kayıtlarına dönüştür.
+-    // Eski yapıda iki OEM aynı kategori altında iki satır olarak bulunuyordu.
+-    // Sıralama R/L başlığına göre: ilk satır Sağ, ikinci satır Sol.
+-    for (final rl in _rlKategoriAdlari.entries) {
+-      final sagKod = _sagKod(rl.key);
+-      final solKod = _solKod(rl.key);
+-      final sagVar = liste.any((e) => _cell(e['kategori_kodu']) == sagKod);
+-      final solVar = liste.any((e) => _cell(e['kategori_kodu']) == solKod);
+-      final eskiler =
+-          liste.where((e) => _cell(e['kategori_kodu']) == rl.key).toList()
+-            ..sort(
+-              (a, b) => (int.tryParse('${a['sira'] ?? 0}') ?? 0).compareTo(
+-                int.tryParse('${b['sira'] ?? 0}') ?? 0,
+-              ),
+-            );
++    bool silinmisMi(String kod) =>
++        silinenTemelKodlar.contains(_birlesikKategoriKodu(kod));
+ 
+-      if (!sagVar && eskiler.isNotEmpty) {
+-        await _db
+-            .from('erp_arac_katalog_parcalar')
+-            .update(<String, dynamic>{
+-              'kategori_kodu': sagKod,
+-              'kategori_adi': '${rl.value} Sağ',
+-            })
+-            .eq('parca_id', eskiler.first['parca_id']);
+-      }
+-      if (!solVar && eskiler.length > 1) {
+-        await _db
+-            .from('erp_arac_katalog_parcalar')
+-            .update(<String, dynamic>{
+-              'kategori_kodu': solKod,
+-              'kategori_adi': '${rl.value} Sol',
+-            })
+-            .eq('parca_id', eskiler[1]['parca_id']);
+-      }
+-
+-      // Tek eski kayıt varsa (özellikle OEM boşsa) eksik tarafı boş olarak oluştur.
+-      if (!solVar && eskiler.length <= 1) {
+-        final mevcutSol = await _db
+-            .from('erp_arac_katalog_parcalar')
+-            .select('parca_id')
+-            .eq('arac_id', aracId)
+-            .eq('kategori_kodu', solKod)
+-            .limit(1);
+-        if ((mevcutSol as List).isEmpty) {
+-          final maxSira = liste.isEmpty
+-              ? 0
+-              : liste
+-                    .map((e) => int.tryParse('${e['sira'] ?? 0}') ?? 0)
+-                    .reduce((a, b) => a > b ? a : b);
+-          await _db.from('erp_arac_katalog_parcalar').insert(<String, dynamic>{
+-            'arac_id': aracId,
+-            'kategori_kodu': solKod,
+-            'kategori_adi': '${rl.value} Sol',
+-            'oem_kodu': null,
+-            'ham_deger': null,
+-            'nitelik': null,
+-            'sira': maxSira + 1,
+-          });
+-        }
+-      }
+-    }
+-
+-    // R/L dönüşümünden sonra listeyi tazele.
+-    res = await _db
+-        .from('erp_arac_katalog_parcalar')
+-        .select()
+-        .eq('arac_id', aracId)
+-        .order('sira');
+-    liste = List<Map<String, dynamic>>.from(res as List);
++    final gorunur = liste
++        .where((e) => _cell(e['nitelik']) != _aractanSilindiIsareti)
++        .where((e) => !silinmisMi(_cell(e['kategori_kodu'])))
++        .toList();
+ 
+-    // Eski kataloglarda tamamen boş olan sütunlar veritabanına yazılmamış olabilir.
+-    // Kullanıcının daha sonra OEM girebilmesi için eksik parça alanlarını otomatik oluştur.
+-    final istenenler = _istenenKategoriAdlari();
+-    final mevcut = liste.map((e) => _cell(e['kategori_kodu'])).toSet();
++    // Eski kataloglarda boş kalan standart parçaları oluştur; fakat kullanıcı
++    // o parçayı özellikle BU ARAÇTAN sildiyse kesinlikle geri getirme.
++    final mevcutTemelKodlar = gorunur
++        .map((e) => _birlesikKategoriKodu(_cell(e['kategori_kodu'])))
++        .where((e) => e.isNotEmpty)
++        .toSet();
+     final eksikler = <Map<String, dynamic>>[];
+     var sira = liste.isEmpty
+         ? 0
+@@ -1048,18 +991,22 @@
+                   .map((e) => int.tryParse('${e['sira'] ?? 0}') ?? 0)
+                   .reduce((a, b) => a > b ? a : b) +
+               1);
+-    for (final entry in istenenler.entries) {
+-      if (mevcut.contains(entry.key)) continue;
++
++    for (final entry in _istenenKategoriAdlari().entries) {
++      final temelKod = _birlesikKategoriKodu(entry.key);
++      if (silinenTemelKodlar.contains(temelKod)) continue;
++      if (mevcutTemelKodlar.contains(temelKod)) continue;
+       eksikler.add(<String, dynamic>{
+         'arac_id': aracId,
+         'kategori_kodu': entry.key,
+-        'kategori_adi': entry.value,
++        'kategori_adi': _rlKategoriAdlari[entry.key] ?? entry.value,
+         'oem_kodu': null,
+         'ham_deger': null,
+         'nitelik': null,
+         'sira': sira++,
+       });
+     }
++
+     if (eksikler.isNotEmpty) {
+       await _db.from('erp_arac_katalog_parcalar').insert(eksikler);
+       res = await _db
+@@ -1070,24 +1017,62 @@
+       liste = List<Map<String, dynamic>>.from(res as List);
+     }
+ 
+-    // Herhangi bir eski R/L artığı kaldıysa ekranda göstermeyelim.
++    final sonSilinenler = liste
++        .where((e) => _cell(e['nitelik']) == _aractanSilindiIsareti)
++        .map((e) => _birlesikKategoriKodu(_cell(e['kategori_kodu'])))
++        .where((e) => e.isNotEmpty)
++        .toSet();
++
+     return liste
+-        .where((e) => !_rlKategoriAdlari.containsKey(_cell(e['kategori_kodu'])))
++        .where((e) => _cell(e['nitelik']) != _aractanSilindiIsareti)
++        .where(
++          (e) => !sonSilinenler.contains(
++            _birlesikKategoriKodu(_cell(e['kategori_kodu'])),
++          ),
++        )
+         .toList();
+   }
+ 
+-  // 2.5.6: Katalog parçasını yalnız seçili araçtan kaldırır.
++  // 2.5.15: Katalog parçasını yalnız seçili araçtan kaldırır ve kalıcı
++  // istisna kaydı bırakır. Global katalog / diğer araçlar kesinlikle etkilenmez.
+   static Future<void> parcaAractanSil({
+     required int aracId,
+     required String kategoriKodu,
+   }) async {
+     final kod = kategoriKodu.trim();
+     if (kod.isEmpty) throw Exception('Parça kategori kodu bulunamadı.');
+-    await _db
+-        .from('erp_arac_katalog_parcalar')
+-        .delete()
+-        .eq('arac_id', aracId)
+-        .eq('kategori_kodu', kod);
++
++    final temelKod = _birlesikKategoriKodu(kod);
++    final varyantlar = _kategoriVaryantlari(temelKod);
++
++    // Önce bu araçtaki gerçek OEM/parça satırlarını temizle.
++    for (final varyant in varyantlar) {
++      await _db
++          .from('erp_arac_katalog_parcalar')
++          .delete()
++          .eq('arac_id', aracId)
++          .eq('kategori_kodu', varyant);
++    }
++
++    // Ardından aynı araç için görünmez bir tombstone bırak. R/L eski şablonları
++    // SAG/SOL kodlarını ayrı ayrı yeniden yayabildiği için üç varyantı da işaretle.
++    var sira = 900000;
++    for (final varyant in varyantlar) {
++      try {
++        await _db.from('erp_arac_katalog_parcalar').insert(<String, dynamic>{
++          'arac_id': aracId,
++          'kategori_kodu': varyant,
++          'kategori_adi': _rlKategoriAdlari[temelKod] ?? temelKod,
++          'oem_kodu': null,
++          'ham_deger': null,
++          'nitelik': _aractanSilindiIsareti,
++          'sira': sira++,
++        });
++      } catch (_) {
++        // Aynı istisna daha önce bırakılmışsa benzersiz indeks nedeniyle tekrar
++        // eklenemeyebilir; bu zaten istenen durumdur.
++      }
++    }
+   }
+ 
+   // 2.5.6: Yalnız kullanıcının sonradan açtığı OZEL_ parçalar global silinebilir.
+--- a/lib/screens/arac_parca_katalog_sayfasi.dart
++++ b/lib/screens/arac_parca_katalog_sayfasi.dart
+@@ -1010,7 +1010,10 @@
+       }
+       if (!mounted) return;
+       setState(() {
+-        _parcalar.removeWhere((p) => _s(p['kategori_kodu']) == kod);
++        final temel = _birlesikRlKategoriKodu(kod);
++        _parcalar.removeWhere(
++          (p) => _birlesikRlKategoriKodu(_s(p['kategori_kodu'])) == temel,
++        );
+       });
+       _mesaj(
+         secim == 'global'
+@@ -1919,6 +1922,20 @@
+     );
+   }
+ 
++  String _birlesikRlKategoriKodu(String kod) {
++    final k = kod.trim();
++    if (k.endsWith('_SAG')) return k.substring(0, k.length - 4);
++    if (k.endsWith('_SOL')) return k.substring(0, k.length - 4);
++    return k;
++  }
++
++  String _birlesikRlKategoriAdi(String ad) {
++    var x = ad.trim();
++    x = x.replaceFirst(RegExp(r'\s+(Sağ|Sag|Sol)$', caseSensitive: false), '');
++    x = x.replaceFirst(RegExp(r'\s+R/L$', caseSensitive: false), '');
++    return x.trim();
++  }
++
+   String _ustKategori(String ad) {
+     final x = ad.toLowerCase();
+     if (x.contains('filtre')) return 'Filtreler';
+@@ -1971,9 +1988,10 @@
+     // Ekranda parçayı bir kez gösterip OEM'leri altında bağımsız arama düğmeleri yapıyoruz.
+     final gruplar = <String, List<Map<String, dynamic>>>{};
+     for (final p in _parcalar) {
+-      final kod = _s(p['kategori_kodu']).isEmpty
++      final hamKod = _s(p['kategori_kodu']);
++      final kod = hamKod.isEmpty
+           ? 'PARCA_${_int(p['parca_id'])}'
+-          : _s(p['kategori_kodu']);
++          : _birlesikRlKategoriKodu(hamKod);
+       gruplar.putIfAbsent(kod, () => <Map<String, dynamic>>[]).add(p);
+     }
+     final parcaGruplari = gruplar.values.toList()
+@@ -2092,7 +2110,9 @@
+                               children: <Widget>[
+                                 Expanded(
+                                   child: Text(
+-                                    _s(ana['kategori_adi']),
++                                    _birlesikRlKategoriAdi(
++                                      _s(ana['kategori_adi']),
++                                    ),
+                                     style: const TextStyle(
+                                       fontWeight: FontWeight.w700,
+                                       fontSize: 16,
+--- a/lib/app_config.dart
++++ b/lib/app_config.dart
+@@ -2,7 +2,7 @@
+   AppConfig._();
+ 
+   static const String appName = 'ÜNAL YEDEK PARÇA ERP';
+-  static const String version = '2.5.14';
++  static const String version = '2.5.15';
+   static const String build = '20260815-mobile-operations';
+ 
+   // Üretimde --dart-define ile değiştirilebilir. Varsayılan değerler mevcut
+--- a/pubspec.yaml
++++ b/pubspec.yaml
+@@ -2,7 +2,7 @@
+ description: PRO ERP
+ publish_to: "none"
+ 
+-version: 2.5.14+2026081502
++version: 2.5.15+2026081503
+ 
+ environment:
+   sdk: ">=2.18.0 <4.0.0"
