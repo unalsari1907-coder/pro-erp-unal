@@ -1,1 +1,1 @@
-PRO ERP 2.5.14 mobile-compatible production build.
+PRO ERP 2.5.15 production build - unified R/L catalog and persistent per-vehicle deletions.
