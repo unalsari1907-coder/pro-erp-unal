@@ -34,7 +34,13 @@ jobs:
         run: |
           set -euo pipefail
           : > /tmp/proerp-2514-patch.tar.gz
-          for f in .release2514/patch-00.b64 .release2514/patch-01.b64 .release2514/patch-02.b64 .release2514/patch-03.b64 .release2514/patch-04.b64 .release2514/patch-05.b64; do
+          for f in \
+            .release2514/patch-00.b64 \
+            .release2514/patch-01.b64 \
+            .release2514/patch-02a.b64 .release2514/patch-02b.b64 \
+            .release2514/patch-03a.b64 .release2514/patch-03b.b64 \
+            .release2514/patch-04a.b64 .release2514/patch-04b.b64 \
+            .release2514/patch-05.b64; do
             base64 -d "$f" >> /tmp/proerp-2514-patch.tar.gz
           done
           tar -xzf /tmp/proerp-2514-patch.tar.gz -C /tmp/proerp-src
