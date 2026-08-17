@@ -36,7 +36,8 @@ jobs:
             git show e0df05edf4fc15a76eb5930944d9dee50c345161:.release2514/$f | base64 -d >> /tmp/proerp-2514-patch.tar.gz
           done
           tar -xzf /tmp/proerp-2514-patch.tar.gz -C /tmp/proerp-src
-          python3 .release2520/apply_2520.py
+          git show 61e0931c4ea861397c97162345530265dcc58052:.release2520/apply_2520.py > /tmp/apply_2520.py
+          python3 /tmp/apply_2520.py
           python3 - <<'PY'
           from pathlib import Path
           p = Path('/tmp/proerp-src/lib/services/arac_katalog_service.dart')
