@@ -1,0 +1,99 @@
+name: Publish PRO ERP 2.5.20
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.release2520/**'
+      - '.github/workflows/publish-2520.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct full source baseline
+        shell: bash
+        run: |
+          set -euxo pipefail
+          SRC=/tmp/proerp-src
+          rm -rf "$SRC"
+          mkdir -p "$SRC"
+          git archive 733c41e8e90a52a66dc22f5b4b01a24b638987e1 | tar -x -C "$SRC"
+          rm -rf "$SRC/.git" "$SRC/build" "$SRC/.dart_tool"
+
+      - name: Apply PRO ERP 2.5.20 source changes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 .release2520/apply_2520.py
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        working-directory: /tmp/proerp-src
+        run: flutter pub get
+
+      - name: Analyze changed application
+        working-directory: /tmp/proerp-src
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build web release
+        working-directory: /tmp/proerp-src
+        run: flutter build web --release
+
+      - name: Verify compiled output
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f /tmp/proerp-src/build/web/index.html
+          test -f /tmp/proerp-src/build/web/main.dart.js
+
+      - name: Prepare full source archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/proerp-src
+          rm -f PRO-ERP-2.5.20-TAM-SURUM.zip
+          zip -qr PRO-ERP-2.5.20-TAM-SURUM.zip . -x '.git/*' 'build/*' '.dart_tool/*'
+          mkdir -p /tmp/proerp-artifact
+          cp PRO-ERP-2.5.20-TAM-SURUM.zip /tmp/proerp-artifact/
+
+      - name: Upload full source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: PRO-ERP-2.5.20-TAM-SURUM
+          path: /tmp/proerp-artifact/PRO-ERP-2.5.20-TAM-SURUM.zip
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish compiled web and full source to main
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd "$GITHUB_WORKSPACE"
+          cp -f /tmp/proerp-artifact/PRO-ERP-2.5.20-TAM-SURUM.zip ./PRO-ERP-2.5.20-TAM-SURUM.zip
+          rm -rf build/web
+          mkdir -p build
+          cp -a /tmp/proerp-src/build/web build/web
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f PRO-ERP-2.5.20-TAM-SURUM.zip build/web
+          if git diff --cached --quiet; then
+            echo 'No publish changes.'
+          else
+            git commit -m 'Publish PRO ERP 2.5.20 full source and web build'
+            git push origin HEAD:main
+          fi
