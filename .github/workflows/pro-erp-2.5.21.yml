@@ -1,0 +1,65 @@
+name: PRO ERP 2.5.21
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.release2521/**'
+      - '.github/workflows/pro-erp-2.5.21.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply cumulative fixes
+        run: |
+          base64 -d .release2521/apply_2521.py.gz.b64 | gzip -d > /tmp/apply_2521.py
+          python3 /tmp/apply_2521.py
+          rm -rf .release2521
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build Web
+        run: flutter build web --release
+
+      - name: Commit PRO ERP 2.5.21 source
+        run: |
+          git config user.name "PRO ERP Builder"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "PRO ERP 2.5.21: OEM counters, compact documents and cari balance fix"
+          git push origin HEAD:main
+
+      - name: Prepare full single-folder package
+        run: |
+          rm -rf /tmp/PRO-ERP-2.5.21
+          mkdir -p /tmp/PRO-ERP-2.5.21
+          rsync -a --exclude='.git' --exclude='build' --exclude='.dart_tool' --exclude='.github' ./ /tmp/PRO-ERP-2.5.21/
+          cp -r build/web /tmp/PRO-ERP-2.5.21/build-web
+          cd /tmp
+          zip -qr "$GITHUB_WORKSPACE/PRO-ERP-2.5.21-TAM-SURUM.zip" PRO-ERP-2.5.21
+
+      - name: Upload full package
+        uses: actions/upload-artifact@v4
+        with:
+          name: PRO-ERP-2.5.21-TAM-SURUM
+          path: PRO-ERP-2.5.21-TAM-SURUM.zip
+          retention-days: 90
