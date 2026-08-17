@@ -1,1 +1,1 @@
-PRO ERP 2.5.18 production build - catalog edit persistence and one-line category labels.
+PRO ERP 2.5.20 production build - sales multi-add, Merkez Depo defaults, stock/RAF/detail panels, Logo-style documents, catalog persistence and OEM progress colors.
