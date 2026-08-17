@@ -15,15 +15,45 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout full history
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Apply cumulative fixes
+      - name: Reconstruct full 2.5.20 source
+        shell: bash
         run: |
+          set -euxo pipefail
+          rm -rf /tmp/proerp-src
+          mkdir -p /tmp/proerp-src
+          : > /tmp/proerp-2513.tar.gz
+          for f in part-00 part-01 part-02 part-03; do
+            git show 57f0ea4f4bfb14fddf86a580e15076377699101c:.release/$f >> /tmp/proerp-2513.tar.gz
+          done
+          tar -xzf /tmp/proerp-2513.tar.gz -C /tmp/proerp-src
+          : > /tmp/proerp-2514-patch.tar.gz
+          for f in patch-00.b64 patch-01.b64 patch-02a.b64 patch-02b.b64 patch-03a.b64 patch-03b.b64 patch-04a.b64 patch-04b.b64 patch-05.b64; do
+            git show e0df05edf4fc15a76eb5930944d9dee50c345161:.release2514/$f | base64 -d >> /tmp/proerp-2514-patch.tar.gz
+          done
+          tar -xzf /tmp/proerp-2514-patch.tar.gz -C /tmp/proerp-src
+          python3 .release2520/apply_2520.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('/tmp/proerp-src/lib/services/arac_katalog_service.dart')
+          s = p.read_text(encoding='utf-8')
+          bad = "_parcaAdiStandartla(parcaAdi, kategoriKodu: eskiKod)"
+          if bad in s:
+              s = s.replace(bad, "_parcaAdiStandartla(parcaAdi)", 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Apply PRO ERP 2.5.21 fixes
+        shell: bash
+        run: |
+          set -euxo pipefail
           base64 -d .release2521/apply_2521.py.gz.b64 | gzip -d > /tmp/apply_2521.py
+          cd /tmp/proerp-src
           python3 /tmp/apply_2521.py
-          rm -rf .release2521
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -32,28 +62,33 @@ jobs:
           cache: true
 
       - name: Dependencies
+        working-directory: /tmp/proerp-src
         run: flutter pub get
 
       - name: Analyze
+        working-directory: /tmp/proerp-src
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Build Web
-        run: flutter build web --release
+        working-directory: /tmp/proerp-src
+        run: flutter build web --release --base-href /pro-erp-unal/
 
-      - name: Commit PRO ERP 2.5.21 source
+      - name: Verify build
+        shell: bash
         run: |
-          git config user.name "PRO ERP Builder"
-          git config user.email "actions@github.com"
-          git add -A
-          git diff --cached --quiet || git commit -m "PRO ERP 2.5.21: OEM counters, compact documents and cari balance fix"
-          git push origin HEAD:main
+          set -euxo pipefail
+          test -f /tmp/proerp-src/build/web/index.html
+          test -f /tmp/proerp-src/build/web/main.dart.js
+          grep -q '<base href="/pro-erp-unal/">' /tmp/proerp-src/build/web/index.html
 
       - name: Prepare full single-folder package
+        shell: bash
         run: |
+          set -euxo pipefail
           rm -rf /tmp/PRO-ERP-2.5.21
           mkdir -p /tmp/PRO-ERP-2.5.21
-          rsync -a --exclude='.git' --exclude='build' --exclude='.dart_tool' --exclude='.github' ./ /tmp/PRO-ERP-2.5.21/
-          cp -r build/web /tmp/PRO-ERP-2.5.21/build-web
+          rsync -a --exclude='.git' --exclude='build' --exclude='.dart_tool' /tmp/proerp-src/ /tmp/PRO-ERP-2.5.21/
+          cp -r /tmp/proerp-src/build/web /tmp/PRO-ERP-2.5.21/build-web
           cd /tmp
           zip -qr "$GITHUB_WORKSPACE/PRO-ERP-2.5.21-TAM-SURUM.zip" PRO-ERP-2.5.21
 
@@ -62,4 +97,19 @@ jobs:
         with:
           name: PRO-ERP-2.5.21-TAM-SURUM
           path: PRO-ERP-2.5.21-TAM-SURUM.zip
+          if-no-files-found: error
           retention-days: 90
+
+      - name: Publish compiled web to main
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd "$GITHUB_WORKSPACE"
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github ! -name .release2520 ! -name .release2521 -exec rm -rf {} +
+          cp -a /tmp/proerp-src/build/web/. .
+          printf '%s\n' 'PRO ERP 2.5.21 production build - OEM counters, compact purchase/sales invoices and dispatch notes, corrected cari balances.' > DEPLOYMENT.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Deploy PRO ERP 2.5.21' || exit 0
+          git push origin HEAD:main
