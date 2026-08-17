@@ -1,1 +1,1 @@
-PRO ERP 2.5.16 production build - uppercase ASCII part names, persistent R/L naming, independent OEM stock lookup.
+PRO ERP 2.5.17 production build - persistent R/L edits, uppercase ASCII catalog names, per-OEM stock lookup, category OEM completion colors.
