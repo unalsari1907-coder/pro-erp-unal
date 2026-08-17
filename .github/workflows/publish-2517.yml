@@ -49,7 +49,8 @@ jobs:
           patch -d /tmp/proerp-src -p1 < /tmp/catalog-2517.patch
           grep -q "version: 2.5.17+2026081701" /tmp/proerp-src/pubspec.yaml
           grep -q "version = '2.5.17'" /tmp/proerp-src/lib/app_config.dart
-          grep -q "kategoriOemDurumu" /tmp/proerp-src/lib/screens/arac_parca_katalog_sayfasi.dart
+          grep -q "kategoriDurumRengi" /tmp/proerp-src/lib/screens/arac_parca_katalog_sayfasi.dart
+          grep -q "kategoriTamamlanan" /tmp/proerp-src/lib/screens/arac_parca_katalog_sayfasi.dart
           grep -q "_parcaAdiStandartla" /tmp/proerp-src/lib/services/arac_katalog_service.dart
           grep -q "R/L" /tmp/proerp-src/lib/services/arac_katalog_service.dart
 
