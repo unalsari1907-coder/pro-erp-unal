@@ -42,6 +42,17 @@ jobs:
         run: |
           set -euxo pipefail
           python3 .release2520/apply_2520.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('/tmp/proerp-src/lib/services/arac_katalog_service.dart')
+          s = p.read_text(encoding='utf-8')
+          bad = "_parcaAdiStandartla(parcaAdi, kategoriKodu: eskiKod)"
+          if bad not in s:
+              raise SystemExit('Expected catalog analyzer fix target not found')
+          s = s.replace(bad, "_parcaAdiStandartla(parcaAdi)", 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          grep -q "_parcaAdiStandartla(parcaAdi)" /tmp/proerp-src/lib/services/arac_katalog_service.dart
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
