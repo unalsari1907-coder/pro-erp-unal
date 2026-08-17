@@ -80,6 +80,26 @@ jobs:
           test -f /tmp/proerp-src/build/web/main.dart.js
           grep -q '<base href="/pro-erp-unal/">' /tmp/proerp-src/build/web/index.html
 
+      - name: Prepare full source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/proerp-src
+          rm -rf build .dart_tool
+          zip -qr /tmp/PRO-ERP-2.5.17-TAM-SURUM.zip .
+
+      - name: Upload full source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: PRO-ERP-2.5.17-TAM-SURUM
+          path: /tmp/PRO-ERP-2.5.17-TAM-SURUM.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Rebuild web release after source archive cleanup
+        working-directory: /tmp/proerp-src
+        run: flutter build web --release --base-href /pro-erp-unal/
+
       - name: Publish compiled web to main
         shell: bash
         run: |
