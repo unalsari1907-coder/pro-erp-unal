@@ -1,1 +1,1 @@
-PRO ERP 2.5.20 production build - sales multi-add, Merkez Depo defaults, stock/RAF/detail panels, Logo-style documents, catalog persistence and OEM progress colors.
+PRO ERP 2.5.21 production build - OEM counters, compact purchase/sales invoices and dispatch notes, corrected cari balances.
