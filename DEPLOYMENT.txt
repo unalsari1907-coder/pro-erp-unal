@@ -1,1 +1,1 @@
-PRO ERP 2.5.17 production build - persistent R/L edits, uppercase ASCII catalog names, per-OEM stock lookup, category OEM completion colors.
+PRO ERP 2.5.18 production build - catalog edit persistence and one-line category labels.
