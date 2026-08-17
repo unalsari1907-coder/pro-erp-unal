@@ -20,15 +20,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Reconstruct full source baseline
+      - name: Reconstruct full 2.5.14 source baseline
         shell: bash
         run: |
           set -euxo pipefail
-          SRC=/tmp/proerp-src
-          rm -rf "$SRC"
-          mkdir -p "$SRC"
-          git archive 733c41e8e90a52a66dc22f5b4b01a24b638987e1 | tar -x -C "$SRC"
-          rm -rf "$SRC/.git" "$SRC/build" "$SRC/.dart_tool"
+          rm -rf /tmp/proerp-src
+          mkdir -p /tmp/proerp-src
+          : > /tmp/proerp-2513.tar.gz
+          for f in part-00 part-01 part-02 part-03; do
+            git show 57f0ea4f4bfb14fddf86a580e15076377699101c:.release/$f >> /tmp/proerp-2513.tar.gz
+          done
+          tar -xzf /tmp/proerp-2513.tar.gz -C /tmp/proerp-src
+          : > /tmp/proerp-2514-patch.tar.gz
+          for f in patch-00.b64 patch-01.b64 patch-02a.b64 patch-02b.b64 patch-03a.b64 patch-03b.b64 patch-04a.b64 patch-04b.b64 patch-05.b64; do
+            git show e0df05edf4fc15a76eb5930944d9dee50c345161:.release2514/$f | base64 -d >> /tmp/proerp-2514-patch.tar.gz
+          done
+          tar -xzf /tmp/proerp-2514-patch.tar.gz -C /tmp/proerp-src
 
       - name: Apply PRO ERP 2.5.20 source changes
         shell: bash
@@ -46,13 +53,13 @@ jobs:
         working-directory: /tmp/proerp-src
         run: flutter pub get
 
-      - name: Analyze changed application
+      - name: Analyze
         working-directory: /tmp/proerp-src
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Build web release
         working-directory: /tmp/proerp-src
-        run: flutter build web --release
+        run: flutter build web --release --base-href /pro-erp-unal/
 
       - name: Verify compiled output
         shell: bash
@@ -60,40 +67,34 @@ jobs:
           set -euxo pipefail
           test -f /tmp/proerp-src/build/web/index.html
           test -f /tmp/proerp-src/build/web/main.dart.js
+          grep -q '<base href="/pro-erp-unal/">' /tmp/proerp-src/build/web/index.html
 
       - name: Prepare full source archive
         shell: bash
         run: |
           set -euxo pipefail
           cd /tmp/proerp-src
-          rm -f PRO-ERP-2.5.20-TAM-SURUM.zip
-          zip -qr PRO-ERP-2.5.20-TAM-SURUM.zip . -x '.git/*' 'build/*' '.dart_tool/*'
-          mkdir -p /tmp/proerp-artifact
-          cp PRO-ERP-2.5.20-TAM-SURUM.zip /tmp/proerp-artifact/
+          rm -f /tmp/PRO-ERP-2.5.20-TAM-SURUM.zip
+          zip -qr /tmp/PRO-ERP-2.5.20-TAM-SURUM.zip . -x '.git/*' 'build/*' '.dart_tool/*'
 
       - name: Upload full source archive
         uses: actions/upload-artifact@v4
         with:
           name: PRO-ERP-2.5.20-TAM-SURUM
-          path: /tmp/proerp-artifact/PRO-ERP-2.5.20-TAM-SURUM.zip
+          path: /tmp/PRO-ERP-2.5.20-TAM-SURUM.zip
           if-no-files-found: error
           retention-days: 90
 
-      - name: Publish compiled web and full source to main
+      - name: Publish compiled web to main
         shell: bash
         run: |
           set -euxo pipefail
           cd "$GITHUB_WORKSPACE"
-          cp -f /tmp/proerp-artifact/PRO-ERP-2.5.20-TAM-SURUM.zip ./PRO-ERP-2.5.20-TAM-SURUM.zip
-          rm -rf build/web
-          mkdir -p build
-          cp -a /tmp/proerp-src/build/web build/web
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
+          cp -a /tmp/proerp-src/build/web/. .
+          printf '%s\n' 'PRO ERP 2.5.20 production build - sales multi-add, Merkez Depo defaults, stock/RAF/detail panels, Logo-style documents, catalog persistence and OEM progress colors.' > DEPLOYMENT.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f PRO-ERP-2.5.20-TAM-SURUM.zip build/web
-          if git diff --cached --quiet; then
-            echo 'No publish changes.'
-          else
-            git commit -m 'Publish PRO ERP 2.5.20 full source and web build'
-            git push origin HEAD:main
-          fi
+          git add -A
+          git commit -m 'Deploy PRO ERP 2.5.20 ERP workflow improvements' || exit 0
+          git push origin HEAD:main
