@@ -1,0 +1,20 @@
+--- a/lib/services/excel_service.dart
++++ b/lib/services/excel_service.dart
+@@ -10,7 +10,7 @@
+     final l=List<Map<String,dynamic>>.from(r);
+     final e=Excel.createExcel();
+     final s=e['STOKLAR'];
+-    final h=['stok_id','urun_adi','uretici_kodu','oem_no','marka','model','arac','urun_ozellik','barkod','cross_kod','rakip_kod','raf','birim','min_stok','kdv','alis_fiyati','satis_fiyati_perakende','satis_fiyati_toptan','stok_miktari','aktif'];
++    final h=['urun_adi','uretici_kodu','oem_no','marka','model','arac','urun_ozellik','barkod','cross_kod','rakip_kod','raf','birim','min_stok','kdv','alis_fiyati','satis_fiyati_perakende','satis_fiyati_toptan','stok_miktari','aktif'];
+     s.appendRow(h);
+     for(final x in l){s.appendRow(h.map((k)=>x[k]).toList());}
+     final b=e.encode(); if(b==null) throw Exception('Excel oluşturulamadı.');
+@@ -47,6 +47,8 @@
+       final cells=sh.rows[i]; final x=<String,dynamic>{};
+       for(int c=0;c<h.length;c++){if(h[c].isNotEmpty&&c<cells.length)x[h[c]]=cells[c]?.value;}
+       final kod=_s(x['uretici_kodu']).trim(), ad=_s(x['urun_adi']).trim();
+       if(kod.isEmpty&&ad.isEmpty) continue;
++      // stok_id Excel'den zorunlu değildir. Yeni kayıtta Supabase/PostgreSQL otomatik üretir;
++      // mevcut stok güncellenirken veritabanındaki stok_id aynen korunur.
+       x.remove('stok_id'); x.remove('stok_miktari');
+       x.removeWhere((k,v)=>!const {'urun_adi','uretici_kodu','oem_no','marka','model','arac','urun_ozellik','barkod','cross_kod','rakip_kod','raf','birim','min_stok','kdv','alis_fiyati','satis_fiyati_perakende','satis_fiyati_toptan','aktif'}.contains(k));
