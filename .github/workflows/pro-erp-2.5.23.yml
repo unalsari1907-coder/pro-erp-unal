@@ -100,6 +100,10 @@ jobs:
           grep -q "BORÇLUYUZ" /tmp/proerp-src/lib/screens/cariler_sayfasi.dart
           grep -q 'erp_katalog_parca_kalici_sil' /tmp/proerp-src/lib/services/arac_katalog_service.dart
           grep -q "x.remove('stok_id')" /tmp/proerp-src/lib/services/excel_service.dart
+          grep -q "grup_kodu" /tmp/proerp-src/lib/services/excel_service.dart
+          grep -q "resim_link" /tmp/proerp-src/lib/services/excel_service.dart
+          grep -q "from('stoklar').insert" /tmp/proerp-src/lib/services/excel_service.dart
+          grep -q "from('stoklar').update" /tmp/proerp-src/lib/services/excel_service.dart
 
       - name: Prepare full package
         shell: bash
@@ -130,7 +134,7 @@ jobs:
           find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github ! -name .release2520 ! -name .release2521 ! -name .release2522 ! -name .release2523 -exec rm -rf {} +
           cp -a /tmp/proerp-src/build/web/. .
           cp /tmp/proerp-src/PRO_ERP_KATALOG_RPC_MOTOR.sql ./PRO_ERP_KATALOG_RPC_MOTOR.sql
-          printf '%s\n' 'PRO ERP 2.5.23 TAM SURUM - catalog final, cari green/red absolute balances, selected cari balance, automatic Excel stok_id.' > DEPLOYMENT.txt
+          printf '%s\n' 'PRO ERP 2.5.23 TAM SURUM - catalog final, cari green/red absolute balances, selected cari balance, automatic Excel stok_id, grup_kodu and resim_link Excel import.' > DEPLOYMENT.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
