@@ -1,5 +1,6 @@
 name: PRO ERP 2.5.23 FINAL CARI
 
+# retrigger: 2026-08-18 final verification
 on:
   push:
     branches: [main]
