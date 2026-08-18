@@ -6,6 +6,11 @@ on:
     paths:
       - '.release2523/**'
       - '.github/workflows/pro-erp-2.5.23.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.release2523/**'
+      - '.github/workflows/pro-erp-2.5.23.yml'
   workflow_dispatch:
 
 permissions:
@@ -117,6 +122,7 @@ jobs:
           retention-days: 90
 
       - name: Publish compiled web to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           set -euxo pipefail
