@@ -1,0 +1,454 @@
+--- a/lib/services/arac_katalog_service.dart
++++ b/lib/services/arac_katalog_service.dart
+@@ -498,6 +498,21 @@
+     final kategoriKodu = _ozelKategoriKodu(ust, ad);
+     final kodlar = _manuelOemleriAyir(oemKodu);
+ 
++    // Kullanıcı bu parçayı daha önce bu araçtan kaldırdıysa, elle yeniden
++    // ekleme açık bir geri alma işlemidir; tombstone'u kaldır.
++    try {
++      await _db.rpc(
++        'erp_katalog_parca_silme_iptal',
++        params: <String, dynamic>{
++          'p_arac_id': aracId,
++          'p_kategori_kodu': kategoriKodu,
++        },
++      );
++    } catch (_) {
++      // Eski veritabanında RPC henüz kurulmamışsa ana ekleme hatasını
++      // maskelememek için aşağıdaki asıl işlem devam eder.
++    }
++
+     // 2.5.4: Yeni ortak parçayı bütün araçlara istemci tarafında yüzlerce
+     // kayıt çekerek dağıtmak yerine veritabanında tek işlemle yayarız.
+     try {
+@@ -914,233 +929,151 @@
+     return puan;
+   }
+ 
+-  static List<Map<String, dynamic>>? _aracAramaCache;
+-  static DateTime? _aracAramaCacheZamani;
++  static List<Map<String, dynamic>>? _ilkAracListeCache;
++  static DateTime? _ilkAracListeCacheZamani;
++  static final Map<String, List<Map<String, dynamic>>> _sorguCache = <String, List<Map<String, dynamic>>>{};
++  static final Map<String, DateTime> _sorguCacheZamani = <String, DateTime>{};
++  static final Map<int, List<Map<String, dynamic>>> _parcaCache = <int, List<Map<String, dynamic>>>{};
++  static final Map<int, DateTime> _parcaCacheZamani = <int, DateTime>{};
++  static final Map<int, Future<List<Map<String, dynamic>>>> _parcaBekleyen = <int, Future<List<Map<String, dynamic>>>>{};
++
++  static void _parcaCacheTemizle([int? aracId]) {
++    if (aracId == null) {
++      _parcaCache.clear();
++      _parcaCacheZamani.clear();
++      return;
++    }
++    _parcaCache.remove(aracId);
++    _parcaCacheZamani.remove(aracId);
++  }
+ 
+   static void _aracAramaCacheTemizle() {
+-    _aracAramaCache = null;
+-    _aracAramaCacheZamani = null;
++    _ilkAracListeCache = null;
++    _ilkAracListeCacheZamani = null;
++    _sorguCache.clear();
++    _sorguCacheZamani.clear();
+   }
+ 
+-  static Future<List<Map<String, dynamic>>> _tumAraclariAramaIcinGetir() async {
+-    final simdi = DateTime.now();
+-    if (_aracAramaCache != null &&
+-        _aracAramaCacheZamani != null &&
+-        simdi.difference(_aracAramaCacheZamani!).inMinutes < 10) {
+-      return _aracAramaCache!;
+-    }
+-
+-    final res = await _db
+-        .from('erp_arac_katalog_araclar')
+-        .select()
+-        .order('uretici')
+-        .order('model')
+-        .order('yil')
+-        .limit(5000);
+-    _aracAramaCache = List<Map<String, dynamic>>.from(res as List);
+-    _aracAramaCacheZamani = simdi;
+-    return _aracAramaCache!;
+-  }
+ 
+   static Future<List<Map<String, dynamic>>> aracAra(String q) async {
+     final temizQ = q.trim();
++    final cacheKey = _norm(temizQ);
++    final simdi = DateTime.now();
+ 
+-    // Katalog ilk açıldığında 5000 aracı çekip taramak yerine yalnız ekranda
+-    // gösterilecek ilk 500 kayıt gelir. Bu açılışı belirgin şekilde hızlandırır.
+-    if (temizQ.isEmpty) {
+-      final res = await _db
+-          .from('erp_arac_katalog_araclar')
+-          .select()
+-          .order('uretici')
+-          .order('model')
+-          .order('yil')
+-          .limit(500);
+-      return List<Map<String, dynamic>>.from(res as List);
+-    }
+-
+-    // Google tarzı yıl aralığı/kısmi eşleşme korunur. İlk dolu aramada bir kere
+-    // araç listesi belleğe alınır; sonraki aramalar Supabase'e tekrar gitmez.
+-    final all = await _tumAraclariAramaIcinGetir();
+-    final arananYil = _arananYil(temizQ);
+-    final kelimeler = _aramaKelimeleri(temizQ, arananYil);
+-
+-    final bulunan = all.where((x) {
+-      if (arananYil != null && !_yilAraliginda(x, arananYil)) return false;
+-      final hay = _norm(
+-        <dynamic>[
+-          x['uretici'],
+-          x['model'],
+-          x['motor'],
+-          x['yakit'],
+-          x['motor_kodu'],
+-          x['sase'],
+-          x['notlar'],
+-          x['arac_sahibi'],
+-        ].join(' '),
+-      );
+-      return kelimeler.every((k) => hay.contains(k));
+-    }).toList();
++    if (temizQ.isEmpty &&
++        _ilkAracListeCache != null &&
++        _ilkAracListeCacheZamani != null &&
++        simdi.difference(_ilkAracListeCacheZamani!).inMinutes < 15) {
++      return List<Map<String, dynamic>>.from(_ilkAracListeCache!);
++    }
++
++    final cached = _sorguCache[cacheKey];
++    final cachedAt = _sorguCacheZamani[cacheKey];
++    if (cached != null &&
++        cachedAt != null &&
++        simdi.difference(cachedAt).inMinutes < 5) {
++      return List<Map<String, dynamic>>.from(cached);
++    }
++
++    final raw = await _db.rpc(
++      'erp_katalog_arac_ara',
++      params: <String, dynamic>{
++        'p_query': temizQ,
++        'p_limit': temizQ.isEmpty ? 60 : 120,
++      },
++    );
++    final sonuc = (raw as List)
++        .map((e) => Map<String, dynamic>.from(e as Map))
++        .toList(growable: false);
+ 
+-    bulunan.sort((a, b) {
+-      final pb = _aramaPuani(b, kelimeler, arananYil);
+-      final pa = _aramaPuani(a, kelimeler, arananYil);
+-      if (pb != pa) return pb.compareTo(pa);
+-      final ua = '${a['uretici'] ?? ''} ${a['model'] ?? ''}';
+-      final ub = '${b['uretici'] ?? ''} ${b['model'] ?? ''}';
+-      return ua.compareTo(ub);
+-    });
+-    return bulunan.take(500).toList();
++    if (temizQ.isEmpty) {
++      _ilkAracListeCache = List<Map<String, dynamic>>.from(sonuc);
++      _ilkAracListeCacheZamani = simdi;
++    }
++    _sorguCache[cacheKey] = List<Map<String, dynamic>>.from(sonuc);
++    _sorguCacheZamani[cacheKey] = simdi;
++    return sonuc;
+   }
+ 
+   static Future<List<Map<String, dynamic>>> parcalariGetir(int aracId) async {
+-    var res = await _db
+-        .from('erp_arac_katalog_parcalar')
+-        .select()
+-        .eq('arac_id', aracId)
+-        .order('sira');
+-    var liste = List<Map<String, dynamic>>.from(res as List);
+-
+-    // 2.5.4 hızlı yol: Yeni şablonlu araçlarda eski R/L kalıntısı yoksa ve
+-    // standart kalemler tamamsa hiçbir ek sorgu / UPDATE / INSERT yapmadan dön.
+-    // Böylece araç seçimi ve yeni araç sonrası detay açılışı anlık hale gelir.
+-    final hizliMevcutKodlar = liste
+-        .map((e) => _cell(e['kategori_kodu']))
+-        .toSet();
+-    final legacyRlVar = hizliMevcutKodlar.any(_rlKategoriAdlari.containsKey);
+-    final standartEksikVar = _istenenKategoriAdlari().keys.any(
+-      (k) => !hizliMevcutKodlar.contains(k),
+-    );
+-    if (!legacyRlVar && !standartEksikVar) {
+-      return liste;
+-    }
+-
+-    // Eski R/L kayıtlarını bir kereye mahsus gerçek Sağ / Sol kayıtlarına dönüştür.
+-    // Eski yapıda iki OEM aynı kategori altında iki satır olarak bulunuyordu.
+-    // Sıralama R/L başlığına göre: ilk satır Sağ, ikinci satır Sol.
+-    for (final rl in _rlKategoriAdlari.entries) {
+-      final sagKod = _sagKod(rl.key);
+-      final solKod = _solKod(rl.key);
+-      final sagVar = liste.any((e) => _cell(e['kategori_kodu']) == sagKod);
+-      final solVar = liste.any((e) => _cell(e['kategori_kodu']) == solKod);
+-      final eskiler =
+-          liste.where((e) => _cell(e['kategori_kodu']) == rl.key).toList()
+-            ..sort(
+-              (a, b) => (int.tryParse('${a['sira'] ?? 0}') ?? 0).compareTo(
+-                int.tryParse('${b['sira'] ?? 0}') ?? 0,
+-              ),
+-            );
+-
+-      if (!sagVar && eskiler.isNotEmpty) {
+-        await _db
+-            .from('erp_arac_katalog_parcalar')
+-            .update(<String, dynamic>{
+-              'kategori_kodu': sagKod,
+-              'kategori_adi': '${rl.value} Sağ',
+-            })
+-            .eq('parca_id', eskiler.first['parca_id']);
+-      }
+-      if (!solVar && eskiler.length > 1) {
+-        await _db
+-            .from('erp_arac_katalog_parcalar')
+-            .update(<String, dynamic>{
+-              'kategori_kodu': solKod,
+-              'kategori_adi': '${rl.value} Sol',
+-            })
+-            .eq('parca_id', eskiler[1]['parca_id']);
+-      }
+-
+-      // Tek eski kayıt varsa (özellikle OEM boşsa) eksik tarafı boş olarak oluştur.
+-      if (!solVar && eskiler.length <= 1) {
+-        final mevcutSol = await _db
+-            .from('erp_arac_katalog_parcalar')
+-            .select('parca_id')
+-            .eq('arac_id', aracId)
+-            .eq('kategori_kodu', solKod)
+-            .limit(1);
+-        if ((mevcutSol as List).isEmpty) {
+-          final maxSira = liste.isEmpty
+-              ? 0
+-              : liste
+-                    .map((e) => int.tryParse('${e['sira'] ?? 0}') ?? 0)
+-                    .reduce((a, b) => a > b ? a : b);
+-          await _db.from('erp_arac_katalog_parcalar').insert(<String, dynamic>{
+-            'arac_id': aracId,
+-            'kategori_kodu': solKod,
+-            'kategori_adi': '${rl.value} Sol',
+-            'oem_kodu': null,
+-            'ham_deger': null,
+-            'nitelik': null,
+-            'sira': maxSira + 1,
+-          });
+-        }
+-      }
++    final simdi = DateTime.now();
++    final cached = _parcaCache[aracId];
++    final cachedAt = _parcaCacheZamani[aracId];
++    if (cached != null &&
++        cachedAt != null &&
++        simdi.difference(cachedAt).inMinutes < 30) {
++      return List<Map<String, dynamic>>.from(cached);
+     }
+ 
+-    // R/L dönüşümünden sonra listeyi tazele.
+-    res = await _db
+-        .from('erp_arac_katalog_parcalar')
+-        .select()
+-        .eq('arac_id', aracId)
+-        .order('sira');
+-    liste = List<Map<String, dynamic>>.from(res as List);
++    final bekleyen = _parcaBekleyen[aracId];
++    if (bekleyen != null) return bekleyen;
++
++    final future = (() async {
++      final raw = await _db.rpc(
++        'erp_katalog_arac_parcalari',
++        params: <String, dynamic>{'p_arac_id': aracId},
++      );
++      final sonuc = (raw as List)
++          .map((e) => Map<String, dynamic>.from(e as Map))
++          .where(
++            (e) => !_rlKategoriAdlari.containsKey(_cell(e['kategori_kodu'])),
++          )
++          .toList(growable: false);
++      _parcaCache[aracId] = List<Map<String, dynamic>>.from(sonuc);
++      _parcaCacheZamani[aracId] = DateTime.now();
++      return sonuc;
++    })();
+ 
+-    // Eski kataloglarda tamamen boş olan sütunlar veritabanına yazılmamış olabilir.
+-    // Kullanıcının daha sonra OEM girebilmesi için eksik parça alanlarını otomatik oluştur.
+-    final istenenler = _istenenKategoriAdlari();
+-    final mevcut = liste.map((e) => _cell(e['kategori_kodu'])).toSet();
+-    final eksikler = <Map<String, dynamic>>[];
+-    var sira = liste.isEmpty
+-        ? 0
+-        : (liste
+-                  .map((e) => int.tryParse('${e['sira'] ?? 0}') ?? 0)
+-                  .reduce((a, b) => a > b ? a : b) +
+-              1);
+-    for (final entry in istenenler.entries) {
+-      if (mevcut.contains(entry.key)) continue;
+-      eksikler.add(<String, dynamic>{
+-        'arac_id': aracId,
+-        'kategori_kodu': entry.key,
+-        'kategori_adi': entry.value,
+-        'oem_kodu': null,
+-        'ham_deger': null,
+-        'nitelik': null,
+-        'sira': sira++,
+-      });
+-    }
+-    if (eksikler.isNotEmpty) {
+-      await _db.from('erp_arac_katalog_parcalar').insert(eksikler);
+-      res = await _db
+-          .from('erp_arac_katalog_parcalar')
+-          .select()
+-          .eq('arac_id', aracId)
+-          .order('sira');
+-      liste = List<Map<String, dynamic>>.from(res as List);
++    _parcaBekleyen[aracId] = future;
++    try {
++      return await future;
++    } finally {
++      _parcaBekleyen.remove(aracId);
+     }
++  }
+ 
+-    // Herhangi bir eski R/L artığı kaldıysa ekranda göstermeyelim.
+-    return liste
+-        .where((e) => !_rlKategoriAdlari.containsKey(_cell(e['kategori_kodu'])))
+-        .toList();
++  static Future<List<Map<String, dynamic>>> oemAra(
++    String oem, {
++    int limit = 100,
++  }) async {
++    final temiz = oem.trim();
++    if (temiz.isEmpty) return <Map<String, dynamic>>[];
++    final raw = await _db.rpc(
++      'erp_katalog_oem_ara',
++      params: <String, dynamic>{'p_oem': temiz, 'p_limit': limit},
++    );
++    return (raw as List)
++        .map((e) => Map<String, dynamic>.from(e as Map))
++        .toList(growable: false);
+   }
+ 
+-  // 2.5.6: Katalog parçasını yalnız seçili araçtan kaldırır.
++  // 2.5.22 FINAL: Katalog parçasını seçili araçtan kalıcı olarak kaldırır.
++  // Tombstone sayesinde şablon/import aynı parçayı yeniden oluştursa bile
++  // kullanıcı açıkça geri eklemedikçe katalogda görünmez.
+   static Future<void> parcaAractanSil({
+     required int aracId,
+     required String kategoriKodu,
+   }) async {
+     final kod = kategoriKodu.trim();
+     if (kod.isEmpty) throw Exception('Parça kategori kodu bulunamadı.');
+-    await _db
+-        .from('erp_arac_katalog_parcalar')
+-        .delete()
+-        .eq('arac_id', aracId)
+-        .eq('kategori_kodu', kod);
++    _parcaCacheTemizle(aracId);
++    final sonuc = await _db.rpc(
++      'erp_katalog_parca_kalici_sil',
++      params: <String, dynamic>{
++        'p_arac_id': aracId,
++        'p_kategori_kodu': kod,
++      },
++    );
++    if (sonuc == null) {
++      throw Exception('Parça araçtan kalıcı olarak silinemedi.');
++    }
+   }
+ 
+   // 2.5.6: Yalnız kullanıcının sonradan açtığı OZEL_ parçalar global silinebilir.
+   // DB tarafındaki RPC hem ana şablonu hem bütün araç eşleşmelerini tek işlemde siler.
+   static Future<int> parcaGlobalSil({required String kategoriKodu}) async {
+     final kod = kategoriKodu.trim();
++    _parcaCacheTemizle();
+     if (!kod.startsWith('OZEL_')) {
+       throw Exception('Standart katalog parçaları tüm katalogdan silinemez.');
+     }
+@@ -1156,6 +1089,7 @@
+     required String oemKodu,
+   }) async {
+     final temiz = oemKodu.trim();
++    _parcaCacheTemizle();
+     await _db
+         .from('erp_arac_katalog_parcalar')
+         .update(<String, dynamic>{
+@@ -1176,8 +1110,30 @@
+     int sira = 0,
+   }) async {
+     final temiz = oemKodu.trim().toUpperCase();
++    _parcaCacheTemizle(aracId);
+     if (temiz.isEmpty) throw Exception('OEM numarası boş bırakılamaz.');
+ 
++    // Parça daha önce araçtan kaldırılmışsa OEM eklemek parçayı açıkça
++    // geri ekleme isteğidir; önce parça tombstone'unu kaldır.
++    await _db.rpc(
++      'erp_katalog_parca_silme_iptal',
++      params: <String, dynamic>{
++        'p_arac_id': aracId,
++        'p_kategori_kodu': kategoriKodu,
++      },
++    );
++
++    // Kullanıcı daha önce bu OEM'i özellikle sildiyse, elle yeniden ekleme
++    // işlemi silme kaydını kaldırır. Böylece kullanıcı kararı her zaman son sözdür.
++    await _db.rpc(
++      'erp_katalog_oem_silme_iptal',
++      params: <String, dynamic>{
++        'p_arac_id': aracId,
++        'p_kategori_kodu': kategoriKodu,
++        'p_oem': temiz,
++      },
++    );
++
+     final mevcut = await _db
+         .from('erp_arac_katalog_parcalar')
+         .select('parca_id,oem_kodu')
+@@ -1219,31 +1175,17 @@
+   }
+ 
+   static Future<void> parcaOemSil({required int parcaId}) async {
+-    final raw = await _db
+-        .from('erp_arac_katalog_parcalar')
+-        .select('arac_id,kategori_kodu')
+-        .eq('parca_id', parcaId)
+-        .single();
+-    final row = Map<String, dynamic>.from(raw);
+-    final aracId = int.parse('${row['arac_id']}');
+-    final kategoriKodu = '${row['kategori_kodu'] ?? ''}';
+-    final ayni = await _db
+-        .from('erp_arac_katalog_parcalar')
+-        .select('parca_id')
+-        .eq('arac_id', aracId)
+-        .eq('kategori_kodu', kategoriKodu);
+-
+-    // Son OEM siliniyorsa parça kalemi kaybolmasın; OEM'siz şablon satırına dönsün.
+-    if ((ayni as List).length <= 1) {
+-      await _db
+-          .from('erp_arac_katalog_parcalar')
+-          .update(<String, dynamic>{'oem_kodu': null, 'ham_deger': null})
+-          .eq('parca_id', parcaId);
+-    } else {
+-      await _db
+-          .from('erp_arac_katalog_parcalar')
+-          .delete()
+-          .eq('parca_id', parcaId);
++    // Silme işlemi PostgreSQL tarafında atomik yapılır ve ayrıca bir tombstone
++    // kaydı bırakılır. Katalog şablonu/import aynı OEM'i tekrar oluştursa bile
++    // RPC okuma fonksiyonları bu OEM'i artık kullanıcı yeniden ekleyene kadar
++    // göstermeyecektir.
++    final sonuc = await _db.rpc(
++      'erp_katalog_oem_kalici_sil',
++      params: <String, dynamic>{'p_parca_id': parcaId},
++    );
++    if (sonuc == null) {
++      throw Exception('OEM silme işlemi tamamlanamadı.');
+     }
++    _parcaCacheTemizle();
+   }
+ }
