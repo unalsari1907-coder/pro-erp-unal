@@ -1,0 +1,218 @@
+--- a/lib/screens/arac_parca_katalog_sayfasi.dart
++++ b/lib/screens/arac_parca_katalog_sayfasi.dart
+@@ -1,3 +1,5 @@
++import 'dart:async';
++
+ import 'package:file_picker/file_picker.dart';
+ import 'package:flutter/material.dart';
+ import 'package:flutter/services.dart';
+@@ -18,7 +20,11 @@
+ 
+ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
+   final TextEditingController _q = TextEditingController();
++  final TextEditingController _parcaQ = TextEditingController();
+   final ScrollController _parcaScrollController = ScrollController();
++  Timer? _aramaDebounce;
++  int _aramaNesli = 0;
++  int _aracSecimNesli = 0;
+   final List<Map<String, dynamic>> _aracGecmisi = <Map<String, dynamic>>[];
+ 
+   bool _yukleniyor = false;
+@@ -39,7 +45,9 @@
+ 
+   @override
+   void dispose() {
++    _aramaDebounce?.cancel();
+     _q.dispose();
++    _parcaQ.dispose();
+     _parcaScrollController.dispose();
+     super.dispose();
+   }
+@@ -48,7 +56,13 @@
+ 
+   String _s(dynamic v) => v?.toString().trim() ?? '';
+ 
++  void _canliAra(String _) {
++    _aramaDebounce?.cancel();
++    _aramaDebounce = Timer(const Duration(milliseconds: 550), _ara);
++  }
++
+   Future<void> _ara() async {
++    final nesil = ++_aramaNesli;
+     setState(() {
+       _yukleniyor = true;
+       _hata = null;
+@@ -56,14 +70,20 @@
+ 
+     try {
+       final liste = await AracKatalogService.aracAra(_q.text);
+-      if (!mounted) return;
++      if (!mounted || nesil != _aramaNesli) return;
++
++      setState(() {
++        _araclar = liste;
++        _aracOemDurumlari = <int, Map<String, int>>{};
++        _yukleniyor = false;
++        if (liste.isEmpty) {
++          _hata = 'Araç bulunamadı. Katalog Excel/CSV dosyanızı içe aktarabilirsiniz.';
++        }
++      });
+ 
+-      final ids = liste.map((e) => _int(e['arac_id'])).where((e) => e > 0).toList();
+-      final durumlar = await AracKatalogService.aracOemDurumlari(ids);
+-      if (!mounted) return;
+-      setState(() { _araclar = liste; _aracOemDurumlari = durumlar; _yukleniyor = false; if (liste.isEmpty) _hata = 'Araç bulunamadı. Katalog Excel/CSV dosyanızı içe aktarabilirsiniz.'; });
+     } catch (e) {
+-      if (!mounted) return;
++      if (!mounted || nesil != _aramaNesli) return;
+       setState(() {
+         _yukleniyor = false;
+         _hata = '$e';
+@@ -76,6 +96,7 @@
+     bool gecmiseEkle = true,
+     bool kategoriSifirla = true,
+   }) async {
++    final nesil = ++_aracSecimNesli;
+     final onceki = _secilen;
+     if (gecmiseEkle && onceki != null && onceki['arac_id'] != arac['arac_id']) {
+       _aracGecmisi.add(Map<String, dynamic>.from(onceki));
+@@ -84,6 +105,7 @@
+     setState(() {
+       _secilen = arac;
+       if (kategoriSifirla) _kategoriFiltre = 'Tümü';
++      if (kategoriSifirla) _parcaQ.clear();
+       _parcalar = <Map<String, dynamic>>[];
+       _yukleniyor = true;
+     });
+@@ -92,7 +114,7 @@
+       final parcalar = await AracKatalogService.parcalariGetir(
+         _int(arac['arac_id']),
+       );
+-      if (!mounted) return;
++      if (!mounted || nesil != _aracSecimNesli) return;
+ 
+       setState(() {
+         _parcalar = parcalar;
+@@ -1747,15 +1769,26 @@
+           children: <Widget>[
+             TextField(
+               controller: _q,
+-              onSubmitted: (_) => _ara(),
++              onChanged: _canliAra,
++              onSubmitted: (_) { _aramaDebounce?.cancel(); _ara(); },
+               decoration: InputDecoration(
+                 border: const OutlineInputBorder(),
+                 prefixIcon: const Icon(Icons.directions_car_rounded),
+                 hintText: 'Google tarzı ara: 2005 DOBLO 1.3 DIZEL, AVF PASSAT 2005 veya şase...',
+-                suffixIcon: IconButton(
+-                  onPressed: _ara,
+-                  icon: const Icon(Icons.search_rounded),
+-                ),
++                suffixIcon: _q.text.isEmpty
++                    ? IconButton(
++                        onPressed: _ara,
++                        icon: const Icon(Icons.search_rounded),
++                      )
++                    : IconButton(
++                        tooltip: 'Aramayı temizle',
++                        onPressed: () {
++                          _aramaDebounce?.cancel();
++                          _q.clear();
++                          _ara();
++                        },
++                        icon: const Icon(Icons.clear_rounded),
++                      ),
+               ),
+             ),
+             const SizedBox(height: 12),
+@@ -1895,10 +1928,9 @@
+           final arac = _araclar[index];
+           final secili = _secilen?['arac_id'] == arac['arac_id'];
+ 
+-          final aracId = _int(arac['arac_id']); final durum = _aracOemDurumlari[aracId] ?? const <String, int>{'tamam': 0, 'toplam': 0}; final tamam = durum['tamam'] ?? 0; final toplam = durum['toplam'] ?? 0; final renk = _durumRengi(tamam, toplam);
+-          return Container(color: renk.withOpacity(0.06), child: ListTile(
++          return ListTile(
+             selected: secili,
+-            leading: Icon(Icons.directions_car_filled_rounded, color: renk),
++            leading: const Icon(Icons.directions_car_filled_rounded),
+             title: Text(
+               '${_s(arac['uretici'])} ${_s(arac['model'])}',
+               style: const TextStyle(fontWeight: FontWeight.bold),
+@@ -1910,9 +1942,15 @@
+               'Motor: ${_s(arac['motor_kodu'])} • Şase: ${_s(arac['sase'])}',
+             ),
+             isThreeLine: true,
+-            trailing: SizedBox(width: 112, child: Row(mainAxisAlignment: MainAxisAlignment.end, children: <Widget>[Text('OEM $tamam/$toplam', style: TextStyle(color: renk, fontWeight: FontWeight.w800, fontSize: 11)), if (_s(arac['sase']).isNotEmpty) IconButton(tooltip: 'Şaseyi Kopyala', onPressed: () => _kopyala(_s(arac['sase']), 'Şase'), icon: const Icon(Icons.copy_rounded))])),
++            trailing: _s(arac['sase']).isNotEmpty
++                ? IconButton(
++                    tooltip: 'Şaseyi Kopyala',
++                    onPressed: () => _kopyala(_s(arac['sase']), 'Şase'),
++                    icon: const Icon(Icons.copy_rounded),
++                  )
++                : const Icon(Icons.chevron_right_rounded),
+             onTap: () => _aracSec(arac),
+-          ));
++          );
+         },
+       ),
+     );
+@@ -1977,13 +2015,25 @@
+     final parcaGruplari = gruplar.values.toList()
+       ..sort((a, b) => _int(a.first['sira']).compareTo(_int(b.first['sira'])));
+ 
++    final parcaArama = _parcaQ.text.trim().toUpperCase();
++    bool parcaEslesiyor(List<Map<String, dynamic>> grup) {
++      if (parcaArama.isEmpty) return true;
++      final haystack = <String>[
++        _s(grup.first['kategori_adi']),
++        _parcaUstKategori(grup.first),
++        _s(grup.first['kategori_kodu']),
++        ...grup.map((p) => _s(p['oem_kodu'])),
++      ].join(' ').toUpperCase();
++      final kelimeler = parcaArama.split(RegExp(r'\s+')).where((e) => e.isNotEmpty);
++      return kelimeler.every(haystack.contains);
++    }
++
+     final kategoriler = <String, int>{}; final kategoriTamam = <String, int>{};
+     for (final grup in parcaGruplari) { final k = _parcaUstKategori(grup.first); kategoriler[k] = (kategoriler[k] ?? 0) + 1; if (grup.any((p) => _s(p['oem_kodu']).isNotEmpty)) kategoriTamam[k] = (kategoriTamam[k] ?? 0) + 1; }
+-    final gorunen = _kategoriFiltre == 'Tümü'
+-        ? parcaGruplari
+-        : parcaGruplari
+-              .where((g) => _parcaUstKategori(g.first) == _kategoriFiltre)
+-              .toList();
++    final gorunen = parcaGruplari
++        .where((g) => _kategoriFiltre == 'Tümü' || _parcaUstKategori(g.first) == _kategoriFiltre)
++        .where(parcaEslesiyor)
++        .toList();
+ 
+     final mobil = MediaQuery.sizeOf(context).width < 1000;
+     final kategoriSirasi = <String>[
+@@ -2254,6 +2304,28 @@
+           ),
+         ),
+         const SizedBox(height: 8),
++        TextField(
++          controller: _parcaQ,
++          onChanged: (_) => setState(() {}),
++          textInputAction: TextInputAction.search,
++          decoration: InputDecoration(
++            isDense: true,
++            border: const OutlineInputBorder(),
++            prefixIcon: const Icon(Icons.manage_search_rounded),
++            hintText: 'Parça, OEM veya kategori ara (örn: yağ filtresi, 55230822, fren)...',
++            suffixIcon: _parcaQ.text.isEmpty
++                ? null
++                : IconButton(
++                    tooltip: 'Parça aramasını temizle',
++                    onPressed: () {
++                      _parcaQ.clear();
++                      setState(() {});
++                    },
++                    icon: const Icon(Icons.clear_rounded),
++                  ),
++          ),
++        ),
++        const SizedBox(height: 8),
+         Expanded(
+           child: _parcalar.isEmpty
+               ? const Center(child: Text('Bu araç için parça kaydı yok.'))
