@@ -1,6 +1,5 @@
-name: PRO ERP 2.5.23 FINAL CARI
+name: PRO ERP 2.5.23 FINAL
 
-# retrigger: 2026-08-18 final verification
 on:
   push:
     branches: [main]
@@ -11,6 +10,9 @@ on:
 
 permissions:
   contents: write
+
+env:
+  CI: true
 
 jobs:
   build:
@@ -54,28 +56,33 @@ jobs:
           patch -p1 < "$GITHUB_WORKSPACE/.release2522/arac_parca_katalog_sayfasi.patch"
           cp "$GITHUB_WORKSPACE/.release2522/PRO_ERP_KATALOG_RPC_MOTOR.sql" ./PRO_ERP_KATALOG_RPC_MOTOR.sql
 
-      - name: Apply 2.5.23 cari final
+      - name: Apply 2.5.23 final updates
         shell: bash
         run: |
           set -euxo pipefail
           cd /tmp/proerp-src
           patch -p1 < "$GITHUB_WORKSPACE/.release2523/cariler_sayfasi.patch"
           patch -p1 < "$GITHUB_WORKSPACE/.release2523/kasa_banka_sayfasi.patch"
+          patch -p1 < "$GITHUB_WORKSPACE/.release2523/excel_stok_id_otomatik.patch"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
       - name: Dependencies
         working-directory: /tmp/proerp-src
         run: flutter pub get
+
       - name: Analyze
         working-directory: /tmp/proerp-src
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
       - name: Build Web
         working-directory: /tmp/proerp-src
         run: flutter build web --release --base-href /pro-erp-unal/
+
       - name: Verify final rules
         shell: bash
         run: |
@@ -87,6 +94,8 @@ jobs:
           grep -q "ALACAKLIYIZ" /tmp/proerp-src/lib/screens/cariler_sayfasi.dart
           grep -q "BORÇLUYUZ" /tmp/proerp-src/lib/screens/cariler_sayfasi.dart
           grep -q 'erp_katalog_parca_kalici_sil' /tmp/proerp-src/lib/services/arac_katalog_service.dart
+          grep -q "x.remove('stok_id')" /tmp/proerp-src/lib/services/excel_service.dart
+
       - name: Prepare full package
         shell: bash
         run: |
@@ -97,6 +106,8 @@ jobs:
           cp -r /tmp/proerp-src/build/web /tmp/PRO-ERP-2.5.23/build-web
           cd /tmp
           zip -qr "$GITHUB_WORKSPACE/PRO-ERP-2.5.23-TAM-SURUM.zip" PRO-ERP-2.5.23
+          unzip -t "$GITHUB_WORKSPACE/PRO-ERP-2.5.23-TAM-SURUM.zip"
+
       - name: Upload full package
         uses: actions/upload-artifact@v4
         with:
@@ -104,6 +115,7 @@ jobs:
           path: PRO-ERP-2.5.23-TAM-SURUM.zip
           if-no-files-found: error
           retention-days: 90
+
       - name: Publish compiled web to main
         shell: bash
         run: |
@@ -112,7 +124,7 @@ jobs:
           find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github ! -name .release2520 ! -name .release2521 ! -name .release2522 ! -name .release2523 -exec rm -rf {} +
           cp -a /tmp/proerp-src/build/web/. .
           cp /tmp/proerp-src/PRO_ERP_KATALOG_RPC_MOTOR.sql ./PRO_ERP_KATALOG_RPC_MOTOR.sql
-          printf '%s\n' 'PRO ERP 2.5.23 TAM SURUM - cari green/red absolute balances, selected cari balance in payment/collection, final catalog fixes.' > DEPLOYMENT.txt
+          printf '%s\n' 'PRO ERP 2.5.23 TAM SURUM - catalog final, cari green/red absolute balances, selected cari balance, automatic Excel stok_id.' > DEPLOYMENT.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
