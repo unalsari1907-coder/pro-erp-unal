@@ -1,0 +1,53 @@
+--- a/lib/screens/cariler_sayfasi.dart
++++ b/lib/screens/cariler_sayfasi.dart
+@@ -177,9 +177,13 @@
+ 
+     if (bakiye == 0) return 'HESAP KAPALI';
+     if (tip.contains('TEDARIK') || tip.contains('TEDARİK')) {
+-      return bakiye > 0 ? 'TEDARİKÇİYE BORÇ' : 'TEDARİKÇİDEN ALACAK';
++      return bakiye > 0
++          ? 'TEDARİKÇİYE BORÇLUYUZ'
++          : 'TEDARİKÇİDEN ALACAKLIYIZ';
+     }
+-    return bakiye > 0 ? 'MÜŞTERİDEN ALACAK' : 'MÜŞTERİYE BORÇ';
++    return bakiye > 0
++        ? 'MÜŞTERİDEN ALACAKLIYIZ'
++        : 'MÜŞTERİYE BORÇLUYUZ';
+   }
+ 
+   int get _aktifCariSayisi =>
+@@ -555,7 +559,7 @@
+                         ),
+                         _detayBilgisi(
+                           'Bakiye',
+-                          _para(bakiye),
++                          _para(bakiye.abs()),
+                           renk: _bakiyeRengi(cari),
+                         ),
+                         _detayBilgisi(
+@@ -1014,7 +1018,7 @@
+                   crossAxisAlignment: CrossAxisAlignment.end,
+                   children: [
+                     Text(
+-                      _para(bakiye),
++                      _para(bakiye.abs()),
+                       style: TextStyle(
+                         color: _bakiyeRengi(cari),
+                         fontSize: 18,
+@@ -1137,14 +1141,14 @@
+                 ),
+                 const SizedBox(width: 8),
+                 _ozetKarti(
+-                  baslik: 'Cari Bize Borçlu',
++                  baslik: 'ALACAKLIYIZ',
+                   deger: _para(_toplamCariAlacagimiz),
+                   ikon: Icons.trending_up,
+                   renk: Colors.green,
+                 ),
+                 const SizedBox(width: 8),
+                 _ozetKarti(
+-                  baslik: 'Biz Cariye Borçluyuz',
++                  baslik: 'BORÇLUYUZ',
+                   deger: _para(_toplamCariBorcumuz),
+                   ikon: Icons.trending_down,
+                   renk: Colors.red,
