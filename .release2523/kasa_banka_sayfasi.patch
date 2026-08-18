@@ -1,0 +1,103 @@
+--- a/lib/screens/kasa_banka_sayfasi.dart
++++ b/lib/screens/kasa_banka_sayfasi.dart
+@@ -347,6 +347,7 @@
+           ),
+           content: Text(
+             'Cari: ${_metin(cari['unvan'])}\n'
++            'Cari Bakiye: ${_para(_sayi(cari['bakiye']).abs())} - ${_cariBakiyeDurumu(cari)}\n'
+             'Kasa / Banka: ${_metin(kasa['kasa_adi'])}\n'
+             'Belge No: $belgeNo\n'
+             'Tutar: ${_para(tutar)}\n\n'
+@@ -432,6 +433,84 @@
+     return '${_sayi(deger).toStringAsFixed(2)} ₺';
+   }
+ 
++
++  Map<String, dynamic>? get _secilenCari {
++    final id = _secilenCariId;
++    if (id == null) return null;
++    for (final cari in _cariler) {
++      if (int.tryParse(cari['cari_id']?.toString() ?? '') == id) return cari;
++    }
++    return null;
++  }
++
++  String _cariBakiyeDurumu(Map<String, dynamic> cari) {
++    final bakiye = _sayi(cari['bakiye']);
++    final tip = _metin(cari['cari_tipi']).toUpperCase();
++    if (bakiye == 0) return 'HESAP KAPALI';
++    if (tip.contains('TEDARIK') || tip.contains('TEDARİK')) {
++      return bakiye > 0
++          ? 'TEDARİKÇİYE BORÇLUYUZ'
++          : 'TEDARİKÇİDEN ALACAKLIYIZ';
++    }
++    return bakiye > 0
++        ? 'MÜŞTERİDEN ALACAKLIYIZ'
++        : 'MÜŞTERİYE BORÇLUYUZ';
++  }
++
++  Color _cariBakiyeRengi(Map<String, dynamic> cari) {
++    final durum = _cariBakiyeDurumu(cari);
++    if (durum.contains('ALACAKLIYIZ')) return Colors.green.shade700;
++    if (durum.contains('BORÇLUYUZ')) return Colors.red.shade700;
++    return Colors.grey.shade700;
++  }
++
++  Widget _secilenCariBakiyeKarti({required bool mobil}) {
++    final cari = _secilenCari;
++    if (cari == null) return const SizedBox.shrink();
++    final renk = _cariBakiyeRengi(cari);
++    final bakiye = _sayi(cari['bakiye']).abs();
++    return Container(
++      width: mobil ? double.infinity : 300,
++      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
++      decoration: BoxDecoration(
++        color: renk.withOpacity(0.08),
++        borderRadius: BorderRadius.circular(10),
++        border: Border.all(color: renk.withOpacity(0.35)),
++      ),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          Text(
++            'Cari Güncel Bakiye',
++            style: TextStyle(
++              color: renk,
++              fontSize: 12,
++              fontWeight: FontWeight.w600,
++            ),
++          ),
++          const SizedBox(height: 3),
++          Text(
++            _para(bakiye),
++            style: TextStyle(
++              color: renk,
++              fontSize: 18,
++              fontWeight: FontWeight.bold,
++            ),
++          ),
++          const SizedBox(height: 2),
++          Text(
++            _cariBakiyeDurumu(cari),
++            style: TextStyle(
++              color: renk,
++              fontSize: 11,
++              fontWeight: FontWeight.bold,
++            ),
++          ),
++        ],
++      ),
++    );
++  }
++
+   String _tarih(dynamic deger) {
+     final metin = deger?.toString().trim() ?? '';
+ 
+@@ -685,6 +764,7 @@
+                     },
+                   ),
+                 ),
++                _secilenCariBakiyeKarti(mobil: mobil),
+                 SizedBox(
+                   width: mobil ? double.infinity : 300,
+                   child: DropdownButtonFormField<int>(
