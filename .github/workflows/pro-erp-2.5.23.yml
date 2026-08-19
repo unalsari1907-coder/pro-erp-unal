@@ -57,8 +57,8 @@ jobs:
         run: |
           set -euxo pipefail
           cd /tmp/proerp-src
-          patch -p1 < "$GITHUB_WORKSPACE/.release2522/arac_katalog_service.patch"
-          patch -p1 < "$GITHUB_WORKSPACE/.release2522/arac_parca_katalog_sayfasi.patch"
+          git apply --recount "$GITHUB_WORKSPACE/.release2522/arac_katalog_service.patch"
+          git apply --recount "$GITHUB_WORKSPACE/.release2522/arac_parca_katalog_sayfasi.patch"
           cp "$GITHUB_WORKSPACE/.release2522/PRO_ERP_KATALOG_RPC_MOTOR.sql" ./PRO_ERP_KATALOG_RPC_MOTOR.sql
 
       - name: Apply 2.5.23 final updates
@@ -66,9 +66,9 @@ jobs:
         run: |
           set -euxo pipefail
           cd /tmp/proerp-src
-          patch -p1 < "$GITHUB_WORKSPACE/.release2523/cariler_sayfasi.patch"
-          patch -p1 < "$GITHUB_WORKSPACE/.release2523/kasa_banka_sayfasi.patch"
-          patch -p1 < "$GITHUB_WORKSPACE/.release2523/excel_stok_id_otomatik.patch"
+          git apply --recount "$GITHUB_WORKSPACE/.release2523/cariler_sayfasi.patch"
+          git apply --recount "$GITHUB_WORKSPACE/.release2523/kasa_banka_sayfasi.patch"
+          git apply --recount "$GITHUB_WORKSPACE/.release2523/excel_stok_id_otomatik.patch"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
