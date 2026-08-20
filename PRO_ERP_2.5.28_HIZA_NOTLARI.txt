@@ -1,0 +1,5 @@
+PRO ERP 2.5.28
+- İrsaliye/fatura/sipariş satır başlıkları ile veri kolonları aynı sabit genişliklere alındı.
+- Ürün, Kod, RAF, Miktar, Birim Fiyat, KDV %, Toplam artık aynı hizada.
+- Satış ve alış irsaliyesindeki depo dropdown taşması giderildi (isExpanded).
+- 2.5.27 kalıcı katalog silme ve sade belge düzeni korunur.

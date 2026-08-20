@@ -1,0 +1,25 @@
+PRO ERP 2.5.27
+
+KATALOG SILME
+- "Bu Araçtan Sil" ile kaldırılan standart parça artık tekrar oluşturulmaz.
+- Silinen parça görünmez tombstone (nitelik=SILINDI) olarak tutulur.
+- Araç tekrar açıldığında parcalariGetir() bu satırı göstermez.
+- Aynı kategori yeniden otomatik üretilmez.
+- OEM sayaçları tombstone satırlarını saymaz.
+
+BELGE GÖRÜNÜMÜ
+- Mor başlık kaldırıldı.
+- İrsaliye / Detaylar / Detaylar II sekmeleri kaldırıldı.
+- Satış/Alış irsaliyesi eski üst düzenine döndü.
+- Satış/Alış faturası eski kurumsal üst düzenine döndü.
+- Siparişlerde eklenen mor belge başlığı kaldırıldı.
+
+SATIR DÜZENİ
+- İrsaliye, fatura ve sipariş seçilen stok satırları sade tablo:
+  Ürün | Kod | RAF | Miktar | Birim Fiyat | KDV % | Toplam
+- Satır düzenleme ve silme butonları korunur.
+- Satış ve alış irsaliyesinde satıra tıklayınca Stok Kartları açılır ve ürün otomatik aranır.
+
+NOT
+- Daha önce eski sürüm tarafından tekrar oluşturulmuş bir parçayı, bu sürümde bir kez daha
+  "Bu Araçtan Sil" ile kaldırırsanız artık geri gelmez.

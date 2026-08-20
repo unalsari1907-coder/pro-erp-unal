@@ -1,0 +1,10 @@
+PRO ERP 2.5.24 HIZ / KOLAYLIK
+- Excel stok aktarımında boş varsayılan Sheet1 kaynaklı 0 stok işlendi sorunu giderildi.
+- STOKLAR sayfası otomatik bulunur; stok_id zorunlu değildir.
+- grup_kodu ve resim_link korunur.
+- Araç listesinde her araç için girilmiş OEM adedi görünür.
+- Katalog ilk açılış 150 araç, arama sonucu en fazla 120 araç; OEM sayıları listeyi bekletmeden arkadan gelir.
+- Katalog arama debounce 350 ms.
+- Stok ekranı ilk açılışta tüm veritabanını indirmez; ilk 250 kart gelir.
+- Stok araması sunucu/RPC üzerinden 250 ms debounce ile çalışır.
+- Gereksiz tüm stok grup_kodu ikinci sorgusu kaldırıldı.

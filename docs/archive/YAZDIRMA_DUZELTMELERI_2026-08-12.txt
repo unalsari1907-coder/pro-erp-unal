@@ -1,0 +1,19 @@
+PRO ERP - YAZDIRMA / PDF DÜZELTMELERİ
+Tarih: 12.08.2026
+
+1. Cari hesap ekstresi A4 portre ve daha okunaklı çıktı düzenine alındı.
+2. Cari ekstre PDF özetinde hesaplanan hareket bakiyesi yerine cari kartındaki güncel bakiye gösteriliyor.
+3. Cari detay ekranındaki Yazdır butonu gerçek CariEkstreService'e bağlandı.
+4. Satış siparişi Yazdır butonu gerçek PDF çıktısına bağlandı.
+5. Alış siparişi Yazdır butonu gerçek PDF çıktısına bağlandı.
+6. Makbuzlar Yazdır butonu A4 kurumsal makbuz çıktısına bağlandı.
+7. Stok detayındaki Yazdır butonu A4 stok kartı çıktısına bağlandı.
+8. Stok kartındaki Etiket Yazdır butonu 100x60 mm etiket çıktısına bağlandı.
+9. Satış faturası, alış faturası, satış irsaliyesi ve alış irsaliyesi yazdırmaları A4 kağıt formatına sabitlendi.
+10. Yazdır butonlarındaki "sonraki adımda bağlanacak" placeholder işlemleri kaldırıldı.
+11. Tüm yeni yazdırma işlemlerine hata yakalama mesajları eklendi.
+12. Ortak kurumsal çıktılar için lib/services/kurumsal_yazdirma_service.dart eklendi.
+
+NOT: Bu ortamda Flutter SDK olmadığı için gerçek flutter analyze/run çalıştırılamadı.
+Değiştirilen Dart dosyalarında parantez/blok dengesi ve yazdırma bağlantıları otomatik kontrol edildi.
+Kendi bilgisayarında önce `flutter pub get`, ardından `flutter run -d chrome` ile test edilmelidir.

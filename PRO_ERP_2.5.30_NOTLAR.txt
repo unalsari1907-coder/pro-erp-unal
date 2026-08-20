@@ -1,0 +1,33 @@
+PRO ERP 2.5.30
+
+KAPSAM SINIRI
+- İstenen alanlar dışında işlem mantığına dokunulmadı.
+- Mevcut alış/satış belge kayıt akışları korunur.
+
+ÜRETİCİ KODU
+- Stok Hareketleri: ürün adının altında ÜRETİCİ KODU belirgin mavi rozet.
+- Mobil Stok Hareketleri: üretici kodu ürünün hemen altında.
+- Stok hareket belge detayında üretici kodu belirgin.
+- İrsaliye / Fatura / Sipariş stok arama kartlarında ÜRETİCİ KODU belirgin mavi rozet.
+- Seçilen belge satırında kolon adı "Üretici Kodu"; değer kalın gösterilir.
+- İrsaliye / Fatura / Sipariş liste ve detaylarındaki üretici kodu etiketleri belirginleştirildi.
+- Dashboard kritik stok detayında üretici kodu belirgin.
+
+HIZ / SAĞLAMLIK
+- Stok Hareketleri artık tüm stok/cari/depo master tablolarını indirmez.
+  Yalnız hareketlerde kullanılan stok/cari/depo ID'lerini parça parça getirir.
+- Stok Hareketleri araması 220 ms debounce ile gereksiz her tuş sorgu/filtre yükünü azaltır.
+- Dashboard aynı veriyi 45 saniye içinde gereksiz tekrar yüklemez.
+- Aynı anda ikinci dashboard yüklemesi engellenir.
+- Manuel yenileme her zaman zorla günceller.
+- PRO_ERP_2.5.30_HIZ_INDEXLERI.sql güvenli indeks dosyası eklendi.
+
+DASHBOARD
+- Logo/kurumsal ERP tarzı Yönetim Merkezi üst alanı.
+- 6 özet kartı:
+  Bugünkü Ciro, Müşteri Alacakları, Toplam Stok Çeşidi,
+  Kritik Stok, Bugünkü Satış Belgesi, Geciken Vadeler.
+- Hızlı İşlemler bölümü.
+- Bugünün son satışları bölümü.
+- Son 6 ay brüt kâr grafiği korunur.
+- Mobil ve masaüstü akışkan düzen korunur.

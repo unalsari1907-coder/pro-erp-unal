@@ -1,0 +1,13 @@
+{
+  "name": "pro-erp-cloudflare",
+  "private": true,
+  "scripts": {
+    "cf:whoami": "wrangler whoami",
+    "cf:inspect": "wrangler pages deployment list --project-name=pro-erp-unal",
+    "cf:preview": "wrangler pages dev build/web",
+    "cf:deploy": "wrangler pages deploy build/web --project-name=pro-erp-unal --branch=main"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+PRO ERP 2.5.24 FINAL
+- Excel SharedString/TextCellValue JSON hatası giderildi.
+- Excel hücreleri Supabase'e primitive String/number/bool olarak gönderilir.
+- stok_id Excel'de zorunlu değildir; grup_kodu ve resim_link desteklenir.
+- Araç listesi anında gelir; OEM dolu/toplam bilgisi arkadan yüklenir.
+- OEM gösterimi örn. OEM 25/129 biçimindedir.
+- Katalog ilk liste/arama 60 sonuçla sınırlandı.
+- Stok ilk açılış 250 kayıt; arama server tarafındadır.
+- SQL hız indeks dosyası eklendi.

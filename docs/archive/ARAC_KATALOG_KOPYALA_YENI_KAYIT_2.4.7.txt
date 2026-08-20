@@ -1,0 +1,15 @@
+PRO ERP 2.4.7 - Araç / Parça Kataloğu geliştirmeleri
+
+- Katalog parça/OEM numaraları tek tuşla kopyalanabilir.
+- Araç şase numarası araç listesinde ve araç detayında kopyalanabilir.
+- Yeni Araç katalog kaydı manuel oluşturulabilir.
+- Seçili araca Yeni Parça / OEM eklenebilir.
+- Üst kategori serbest yazılabilir; Sensörler, Hortumlar veya yeni bir kategori eklenebilir.
+- Özel kategoriler kategori panelinde otomatik görünür.
+- OEM boş bırakılarak kayıt açılabilir ve sonra düzenlenebilir.
+- Birden fazla OEM yeni satırlara ayrı kod olarak eklenebilir (satır/virgül/noktalı virgül).
+- Katalog kaydı Parça Adı + Üst Kategori + OEM ile sonradan düzenlenebilir.
+- Mevcut standart katalog alanları korunur; düzenleme sonrası boş varsayılan kayıt tekrar oluşmaz.
+- Stok eşleştirme ekranında OEM numarası gösterilmez; katalog listesinde kopyalama için görünür.
+
+Yeni SQL migration gerektirmez; mevcut erp_arac_katalog_araclar ve erp_arac_katalog_parcalar tabloları kullanılır.

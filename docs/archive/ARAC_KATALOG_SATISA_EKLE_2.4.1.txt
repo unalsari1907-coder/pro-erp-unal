@@ -1,0 +1,9 @@
+PRO ERP 2.4.1 - Araç Parça Kataloğu Satış Entegrasyonu
+
+- Katalog stok eşleşmelerinde Üretici Kodu her zaman görünür.
+- Stok, marka, raf, OEM ve satış fiyatı görünümü geliştirildi.
+- Stok varsa Satışa Ekle butonu aktif; ürün Satış ekranına hazır sepette açılır.
+- Stok yoksa buton pasif ve Stok Yok olarak görünür.
+- Stok Detayı butonu eklendi.
+- Mobil ve masaüstü düzenleri ayrı uyarlanır.
+- Fiyat alanı için perakende/liste/indirimli/toptan gösterim fallback'i vardır; satış ekranı kendi fiyat politikasını korur.

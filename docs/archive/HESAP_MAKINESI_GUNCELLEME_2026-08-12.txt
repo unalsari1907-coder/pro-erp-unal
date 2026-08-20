@@ -1,0 +1,26 @@
+ÜNAL YEDEK PARÇA ERP - HESAP MAKİNESİ GÜNCELLEMESİ
+
+Eklenenler:
+- Finans / Muhasebe > Hesap Makinesi menüsü
+- Masaüstünde üst sekme çubuğunda her ekrandan açılan hesap makinesi simgesi
+- Telefonda AppBar üzerinde hesap makinesi simgesi
+- Normal dört işlem, parantez ve yüzde
+- KDV ekle / KDV çıkar
+- İskonto hesaplama
+- Kâr oranı hesaplama
+- Hedef kâr marjından satış fiyatı hesaplama
+- TCMB günlük kurlarıyla TRY/USD/EUR/GBP/CHF/JPY dönüşümü
+- TCMB alış / satış kuru seçimi
+- İşlem geçmişi
+- Sonucu ve geçmiş satırını panoya kopyalama
+- Enter ile hesaplama, Esc ile dialog kapatma
+- Mobil / masaüstü responsive görünüm
+
+Dosya:
+lib/screens/hesap_makinesi_sayfasi.dart
+
+Entegrasyon:
+lib/screens/dashboard_sayfasi.dart
+lib/services/yetki_service.dart
+lib/screens/kullanici_yetki_sayfasi.dart
+lib/screens/kullanici_yetkileri_sayfasi.dart

@@ -1,0 +1,4 @@
+PRO ERP 2.4.3
+Araç katalog servisindeki Dart 3 record sözdizimi kaldırıldı.
+Proje Dart SDK >=2.18 ile uyumlu klasik Map/List/int yapıları kullanır.
+Yıl aralığı araması, Google tarzı çok kelimeli arama, OEM düzenleme ve katalog özellikleri korunmuştur.

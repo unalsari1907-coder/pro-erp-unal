@@ -1,0 +1,33 @@
+name: pro_erp
+description: PRO ERP
+publish_to: "none"
+
+version: 2.5.20+2026081701
+
+environment:
+  sdk: ">=2.18.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  supabase_flutter: ^2.8.0
+  cupertino_icons: ^1.0.8
+  http: ^0.13.5
+  csv: ^5.0.0
+  fl_chart: ^0.68.0
+  image_picker: ^1.1.2
+  file_picker: ^5.5.0
+  excel: ^2.1.0
+  pdf: ^3.10.8
+  printing: ^5.10.4
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true

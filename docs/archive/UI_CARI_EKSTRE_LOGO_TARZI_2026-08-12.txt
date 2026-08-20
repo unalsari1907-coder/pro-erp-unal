@@ -1,0 +1,11 @@
+ÜNAL YEDEK PARÇA ERP - GÖRSEL / CARİ EKSTRE GÜNCELLEMESİ
+
+- Sol ana menü koyu kurumsal lacivert tasarıma geçirildi.
+- Sol menü marka başlığı ÜNAL YEDEK PARÇA / Kurumsal ERP oldu.
+- Ayarlar başlığında ÜNAL YEDEK PARÇA görünür.
+- Cari kart hareket tablosundan İşlem No ve İrsaliye No kaldırıldı.
+- Görünen kolonlar: Tarih, İşlem Türü, Fatura No, Açıklama, Borç, Alacak, Bakiye.
+- Satıra tıklanınca detay penceresinde İşlem No ve İrsaliye No gösterilmeye devam eder.
+- Cari ekstre PDF ve Excel aynı kolon düzenine geçirildi.
+- Ekstrede yürüyen bakiye (B)/(A) mantığı korunur.
+- VIRMAN_TEDARIKCI Borç/Alacak düzeltmesi korunur.

@@ -1,0 +1,20 @@
+PRO ERP - Cari Ekstre Logo Tarzı Düzenleme
+Tarih: 12.08.2026
+
+Yapılanlar:
+- Cari ekstre görünümü muhasebe programı mantığına çevrildi.
+- Kolonlar: Tarih, İşlem No, İşlem Türü, Fatura No, İrsaliye No, Açıklama, Borç, Alacak, Bakiye.
+- Hareketler kronolojik sırada gösterilir.
+- Her satırda yürüyen bakiye hesaplanır.
+- Bakiye yönü (B) Borç / (A) Alacak olarak gösterilir.
+- VIRMAN_TEDARIKCI hareketinde mahsup tutarı Borç tarafında gösterilir.
+- Satış/alış faturalarına bağlı irsaliye numaraları ilişki tablolarından otomatik bulunur.
+- Cari Kart detay ekranı aynı ekstre mantığına geçirildi.
+- Cari Detay ekranında İşlem No, Fatura No ve İrsaliye No birlikte gösterilir.
+- Cari PDF / Paylaş çıktısı A4 yatay, 9 kolonlu profesyonel ekstre formatına geçirildi.
+- Yazdırma aynı A4 yatay formatı kullanır.
+- Excel çıktısı aynı kolon düzenini ve yürüyen bakiye mantığını kullanır.
+- Alt toplam: Toplam Borç, Toplam Alacak, Son Bakiye.
+
+Not:
+Fatura/irsaliye ilişki tabloları eski bir kurulumda mevcut değilse ekstre yine açılır; mevcut hareket bilgileri kaybolmaz.

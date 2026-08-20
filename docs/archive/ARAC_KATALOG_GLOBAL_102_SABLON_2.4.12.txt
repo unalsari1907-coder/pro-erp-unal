@@ -1,0 +1,8 @@
+PRO ERP 2.4.12
+
+- Araç katalogundaki tüm benzersiz parça kalemleri artık ortak ana şablondur.
+- İlk katalog açılışında mevcut tüm araçlar eksik ortak kalemlerle tamamlanır.
+- Yeni parça açıldığında bütün araçlara otomatik eklenir.
+- Yeni araç açıldığında mevcut ortak parça şablonunun tamamı otomatik eklenir.
+- OEM kodları araç bazında ayrı kalır; eksik olanlar OEM YAZMIYOR olarak görünür.
+- Büyük kataloglarda Supabase 1000 satır sınırına takılmamak için sayfalı okuma ve toplu insert kullanılır.

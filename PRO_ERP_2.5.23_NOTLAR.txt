@@ -1,0 +1,16 @@
+PRO ERP 2.5.23 TAM KAYNAK
+
+- CALISAN HIZLI paket temel alınmıştır.
+- Araç Katalog arama ekranı çalışan hızlı sürümdeki haliyle korunmuştur.
+- Diğer güncel 2.5.23 kaynaklar üzerine alınmıştır.
+- Katalog mevcutKategoriKodu derleme hatası giderilmiştir.
+- Cari bakiyeleri pozitif görünür: ALACAKLIYIZ yeşil, BORÇLUYUZ kırmızı.
+- Tahsilat/Ödeme ekranında seçilen cari güncel bakiyesi görünür.
+- Excel stok yüklemede stok_id zorunlu değildir.
+- Excel stok alanlarında grup_kodu ve resim_link vardır.
+- Excel başlık okuma toleransı artırılmıştır.
+
+Test:
+flutter pub get
+flutter analyze
+flutter run -d chrome

@@ -1,0 +1,9 @@
+PRO ERP 2.4.5 - Araç Kataloğu Sağ / Sol ayrımı
+
+- R/L ile tanımlanan parça grupları artık iki ayrı kayıt: Sağ ve Sol.
+- İlk OEM Sağ, ikinci OEM Sol kabul edilir.
+- OEM olmayan R/L alanlarında Sağ ve Sol ayrı boş kayıt oluşturulur.
+- Kullanıcı her taraf için OEM'i ayrı ayrı girip düzeltebilir.
+- Eski katalog verileri araç açıldığında otomatik olarak yeni Sağ/Sol yapısına dönüştürülür.
+- Stok araması her satırda tek OEM ile yapıldığı için eşleşme daha güvenilir olur.
+- Yeni Excel/CSV aktarımlarında R/L sütunları otomatik iki tarafa ayrılır.

@@ -1,0 +1,7 @@
+PRO ERP 2.4.4 - Araç Kataloğu Navigasyon/OEM Düzenleme
+
+- OEM dolu olsa bile Değiştir/Düzelt kalemi her zaman görünür.
+- OEM kaydından sonra araç/kategori ekranı korunur, başa dönmez.
+- Katalog içi geri davranışı önceki seçime dönebilecek şekilde iyileştirildi.
+- Parça listesi kaydırma konumu korunur.
+- Güçlü yıl aralığı ve Google tarzı arama korunur.

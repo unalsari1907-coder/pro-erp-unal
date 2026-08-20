@@ -1,0 +1,33 @@
+PRO ERP 2.5.28 - DUZENLENMIS
+
+ORTAK STOK ARAMA GORUNUMU
+- Satış İrsaliyesi
+- Alış İrsaliyesi
+- Satış Faturası
+- Alış Faturası
+- Satış Siparişi
+- Alış Siparişi
+
+Bu ekranların tamamındaki stok arama sonucu kartları aynı görünüme alındı:
+- ürün resmi/ikonu
+- ürün adı
+- üretici kodu
+- STOK rozeti
+- RAF rozeti
+- stok detay butonu
+- ekle butonu
+- AFN / SFI / SFT / SFP / SFL fiyat şeridi
+
+SATIR HIZASI
+- Ürün | Kod | RAF | Miktar | Birim Fiyat | KDV % | Toplam kolonları ortak widget kullanır.
+- Başlık ve satırlar artık aynı yatay scroll içinde hareket eder; birbirinden kaymaz.
+- Ayrı ayrı satır scroll yapısı kaldırıldı.
+
+TAŞMA DÜZELTMELERİ
+- Belge giriş dropdown alanlarına isExpanded uygulanarak depo/cari/kasa taşmaları azaltıldı.
+- Alış faturası toplam kartı kompaktlaştırıldı; alt overflow riski azaltıldı.
+
+KORUNANLAR
+- 2.5.27 kalıcı araçtan parça silme davranışı korunur.
+- Excel düzeltmeleri korunur.
+- Hız geliştirmeleri korunur.

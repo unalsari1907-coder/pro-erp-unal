@@ -1,0 +1,7 @@
+PRO ERP 2.4.8 - ORTAK PARÇA KATALOĞU
+
+- Yeni Parça / OEM ile açılan yeni parça türleri artık bütün mevcut araçlara otomatik eklenir.
+- Diğer araçlarda OEM boş gelir; OEM araç bazında sonradan girilir.
+- Bundan sonra oluşturulan yeni araçlara daha önce tanımlanmış ortak parça türleri otomatik eklenir.
+- Excel/CSV ile içe aktarılan araçlara da ortak parça türleri otomatik tamamlanır.
+- Aynı ortak parça aynı araçta tekrar oluşturulmaz.

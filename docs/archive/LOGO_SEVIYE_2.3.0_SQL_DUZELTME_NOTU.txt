@@ -1,0 +1,8 @@
+PRO ERP 2.3.0 SQL DÜZELTMESİ
+
+- erp_vade_takip bazı kurulumlarda VIEW olduğu için CREATE INDEX hatası giderildi.
+- Nesne yoksa TABLE oluşturulur.
+- Normal VIEW varsa korunur ve index/RLS işlemleri atlanır.
+- TABLE/MATERIALIZED VIEW ise uygun indexler oluşturulur.
+- RLS yalnız TABLE/PARTITIONED TABLE üzerinde uygulanır.
+- Migration tekrar çalıştırılabilir (idempotent yapı korunmuştur).

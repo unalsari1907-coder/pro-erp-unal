@@ -1,0 +1,18 @@
+PRO ERP 2.3.0 - 12.08.2026
+
+- Yönetici Kokpiti eklendi.
+- Belge Geçmişi / Belge Zinciri araması eklendi.
+- Muhasebe Mizan ekranı eklendi.
+- Kur Farkı Fişleri eklendi.
+- Vade Yaşlandırma eklendi.
+- Araç -> Parça Kataloğu eklendi.
+- Sistem Sağlık Kontrolü eklendi.
+- Kritik Stok Sipariş Önerisi ana menüye alındı.
+- Muhasebe fiş satırları için otomatik üst toplam trigger migration'ı eklendi.
+- Standart hesap planı başlangıç kayıtları eklendi.
+- Belge bağlantıları, kur farkı ve sistem kontrol log tabloları eklendi.
+- Yedekleme kapsamı genişletildi.
+- Yetki matrisi yeni ekranlarla güncellendi.
+- Sürüm 2.3.0+20260812 olarak yükseltildi.
+
+NOT: Gerçek e-Belge gönderimi özel entegratör API kimliği gerektirir.

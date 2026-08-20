@@ -1,0 +1,27 @@
+PRO ERP 2.5.28 - BIREBIR IRSALIYE DUZENI
+
+STOK ARAMA
+- Satış/Alış İrsaliyesi hariç diğer belge ekranlarındaki stok arama kartları da aynı ortak kartı kullanır.
+- Satış Faturası
+- Alış Faturası
+- Satış Siparişi
+- Alış Siparişi
+- Fiyatlar AFN / SFI / SFT / SFP / SFL tek satırda tutulur.
+- STOK ve RAF rozetleri irsaliye görünümüyle aynıdır.
+
+ALT TOPLAMLAR
+- Satış Faturası
+- Alış Faturası
+- Satış Siparişi
+- Alış Siparişi
+ekranlarında:
+Ara Toplam | İskonto Toplam | KDV Toplam | Genel Toplam
+en altta, irsaliye düzenindeki kart görünümünde bulunur.
+
+SATIR HIZASI
+- 2.5.28 ortak hizalı Ürün | Kod | RAF | Miktar | Birim Fiyat | KDV % | Toplam yapısı korunur.
+
+KORUNANLAR
+- Katalog kalıcı silme düzeltmesi
+- Excel düzeltmeleri
+- Hız geliştirmeleri

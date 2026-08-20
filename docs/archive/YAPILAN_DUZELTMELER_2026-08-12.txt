@@ -1,0 +1,43 @@
+PRO ERP - 12.08.2026 GÜNCELLEME NOTLARI
+
+1) BELGE NUMARALARI
+- Stok hareket detaylarında Fatura No + İrsaliye No birlikte gösterilecek şekilde belge bağlantı çözümleme geliştirildi.
+- Cari kart detayındaki hareketlerde Fatura No + İrsaliye No birlikte gösterilecek şekilde bağlantı çözümleme geliştirildi.
+- Cari Hareketleri fatura detayında bağlı satış/alış irsaliye numaraları getiriliyor.
+- Cari Detay sayfasındaki fatura detayında bağlı irsaliye numaraları gösteriliyor.
+- satis_irsaliye_fatura / alis_irsaliye_fatura bağlantı tabloları üzerinden bir faturaya bağlı birden fazla irsaliye varsa numaralar birlikte gösterilir.
+
+2) TELEFON / KÜÇÜK EKRAN UYUMU
+- Genel mobil yazı/kontrol yoğunluğu küçük ekranda optimize edildi.
+- Sabit genişlikli detay pencereleri telefon ekranına göre sınırlandırıldı.
+- Geniş tablolar yatay kaydırılabilir hale getirildi.
+- Satır (Row) tabanlı masaüstü düzenleri telefonda taşma yerine yatay kaydırılabilir güvenli düzene alındı.
+- AppBar üzerinde çok sayıda buton olduğunda telefonda yatay kaydırılabilir aksiyon alanı eklendi.
+
+Mobil uyum uygulanan ana modüller:
+- Satış Siparişleri
+- Satış İrsaliyeleri
+- Satış İadeleri / Alış İadeleri
+- Satış Faturaları ve detayları
+- Alış Faturaları ve detayları
+- Alış Siparişleri
+- Alış İrsaliyeleri
+- Cari Kartlar ve Cari Detay
+- Cari Hareketleri
+- Kasalar / Bankalar / POS
+- Transfer / Virman
+- Kasa Hareketleri
+- Kasa Gün Sonu
+- Makbuzlar
+- Gider / Masraf
+- Raporlar (Satış / Alış / Stok / Cari / Kasa)
+- Kullanıcı / Yetki
+
+Yeni ortak mobil yardımcı dosyası:
+lib/widgets/mobil_uyum.dart
+
+EK DÜZELTME - MASAÜSTÜ / DETAY DONMA
+- Mobil yardımcılar artık 720 px ve üzeri masaüstü/tablet genişliğinde mevcut ERP yerleşimini aynen korur.
+- MobilDialogIcerik masaüstünde eski sabit dialog ölçülerini kullanır; masaüstü detay pencereleri gereksiz büyütülmez/küçültülmez.
+- MobilTablo masaüstünde ek yatay ScrollView üretmez. Satış/alış fatura ve irsaliye detaylarındaki iç içe yatay kaydırma kaldırıldı; detay ekranının donma/takılma riski giderildi.
+- Mobil uyum yalnız telefon ekranında devreye girer.

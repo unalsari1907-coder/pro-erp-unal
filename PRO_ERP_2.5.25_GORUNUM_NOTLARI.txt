@@ -1,0 +1,10 @@
+PRO ERP 2.5.25
+- Araç listesi OEM durumuna göre renkli:
+  Kırmızı = hiç OEM yok
+  Turuncu = kısmi OEM var
+  Yeşil = tüm OEM tamam
+- OEM dolu/toplam göstergesi korunur.
+- Yeni Satış, Satış İrsaliyesi, Yeni Alış İrsaliyesi ve sipariş ekranlarına Logo/Tiger tarzı
+  mor/mavi belge başlığı ve İrsaliye / Detaylar / Detaylar II sekme görünümü eklendi.
+- Mevcut işlem mantığı, stok/kasa/cari kayıt akışları değiştirilmedi.
+- Excel 2.5.24 düzeltmeleri korunur.

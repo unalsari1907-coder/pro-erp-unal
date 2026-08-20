@@ -1,0 +1,14 @@
+PRO ERP - Cari Virman Borç/Alacak Görüntüleme Düzeltmesi
+Tarih: 12.08.2026
+
+Düzeltme:
+- VIRMAN_TEDARIKCI hareketinde tedarikçiye olan borcun mahsup edilmesi artık BORÇ kolonunda gösterilir.
+- ALACAK kolonu bu işlem için 0,00 gösterilir.
+- Müşteri virman mantığı değiştirilmemiştir.
+- Cari kart detay tablosu düzeltildi.
+- Cari detay sayfası düzeltildi.
+- Cari hareketleri sayfası düzeltildi.
+- Cari ekstre PDF ve Excel çıktıları düzeltildi.
+- Virman ana bakiye hesaplamasına dokunulmadı; 13.020 -> 3.020 ve 10.326 -> 326 mantığı korunur.
+
+Not: Bu sürüm eski Supabase kayıtlarında VIRMAN_TEDARIKCI tutarı ALACAK alanında tutulmuş olsa dahi kullanıcıya muhasebe anlamına uygun BORÇ kolonunda sunar. Böylece mevcut çalışan veritabanı/bakiye mekanizması bozulmaz.

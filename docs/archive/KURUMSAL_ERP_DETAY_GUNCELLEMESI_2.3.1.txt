@@ -1,0 +1,14 @@
+PRO ERP 2.3.1 - KURUMSAL ERP DETAY GUNCELLEMESI
+
+- Yönetici Kokpiti: tüm finans kartları tıklanabilir ve kayıt detay listesi açar.
+- Yapılacak İşler: tüm kartlar tıklanabilir; 0 kayıt için bilgi mesajı verir.
+- Yönetici uyarıları ilgili detay listesine bağlandı.
+- Operasyon Merkezi: tüm kartlar tıklanabilir ve filtreli kayıtları açar.
+- Teklif/Proforma, Satın Alma Talepleri, Onay Merkezi, Kampanya/Fiyat, Araç Uyumluluk, Seri/Lot ve diğer genel Kurumsal ERP kayıtlarında satıra tıklama artık salt detay penceresi açar; düzenleme ayrı Düzenle düğmesindedir.
+- Kritik Stok/Sipariş Önerisi satırları detaylıdır.
+- Araç -> Parça Kataloğu sonuçları detaylıdır.
+- Vade Yaşlandırma özet kartları ve satırlar detaylıdır.
+- Belge Geçmişi/Zinciri mevcut detay davranışı korunmuştur.
+- Ortak kurumsal detay penceresi eklendi: lib/widgets/erp_detay_dialog.dart
+- Masaüstü ve mobil için responsive detay pencereleri kullanılır.
+- Veritabanı şeması değişmedi; bu güncelleme için yeni SQL gerekmiyor.

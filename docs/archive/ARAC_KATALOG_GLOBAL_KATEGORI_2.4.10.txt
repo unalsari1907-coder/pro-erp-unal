@@ -1,0 +1,7 @@
+PRO ERP 2.4.10 - ARAÇ KATALOĞU GLOBAL KATEGORİ
+
+- Bir araçta aynı parça türünün Üst Kategori veya Parça Adı değiştirilirse, aynı kategori koduna bağlı bütün araçlarda güncellenir.
+- OEM numarası araç bazlı kalır; yalnız düzenlenen araç/parça satırının OEM değeri değişir.
+- Kategori kodu sabit tutulduğu için mevcut OEM ilişkileri ve stok eşleşmeleri bozulmaz.
+- Düzenleme penceresine bu davranışı açıklayan bilgi notu eklendi.
+- Yeni SQL gerekmez.

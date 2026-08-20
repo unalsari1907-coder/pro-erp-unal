@@ -1,0 +1,11 @@
+TCMB GÜNLÜK KUR ENTEGRASYONU
+- Döviz/Kur ekranı özel profesyonel sayfaya çevrildi.
+- USD, EUR, GBP, CHF, JPY günlük kurları desteklenir.
+- ERP açılışında günün kuru yoksa otomatik çekme denemesi yapılır.
+- Manuel "TCMB Kurlarını Güncelle" butonu eklendi.
+- Manuel kur girişi yedek seçenek olarak bırakıldı.
+- Kur geçmişi ve efektif alış/satış alanları gösterilir.
+- TCMB isteği tarayıcıdan değil Supabase Edge Function üzerinden yapılır.
+- JPY gibi 100 birim üzerinden yayımlanan kurlar hesaplama için 1 birime normalize edilir.
+- Geçmiş belge kurları değişmemeli; belge oluşturma tarafında kur sabitlenmesi için servis hazırdır.
+Kurulum için TCMB_KUR_KURULUMU.md dosyasını izleyin.

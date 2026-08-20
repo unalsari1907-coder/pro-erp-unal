@@ -1,0 +1,7 @@
+PRO ERP 2.4.9 - Araç Katalog Detay Düzenleme
+
+- Seçili araçta Araç Detayını Düzenle butonu eklendi.
+- Üretici, model, model yılı, uyum aralığı, motor, yakıt, motor kodu, şase, araç sahibi ve not/ek bilgi değiştirilebilir.
+- Not alanı çok satırlı ve uzun açıklamaya uygundur.
+- Kaydettikten sonra araç/parça ekranında kalınır; kategori ve kaydırma konumu korunur.
+- Güncel bilgi araç üst bilgi kartında anında görünür.

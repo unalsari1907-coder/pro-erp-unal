@@ -1,0 +1,6 @@
+PRO ERP 2.4.6 - Araç Kataloğu Model Yılı Görünümü
+
+- Araç listesinde katalogdaki gerçek YIL alanı artık "Model Yılı" olarak ayrı gösterilir.
+- YILLAR alanı "Uyum Aralığı" olarak ayrı gösterilir.
+- Araç detay üst bilgisinde Model Yılı ve Uyum Aralığı ayrı alanlardır.
+- Güçlü arama ve yıl aralığı eşleşmesi korunmuştur.

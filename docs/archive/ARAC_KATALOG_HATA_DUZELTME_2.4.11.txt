@@ -1,0 +1,4 @@
+PRO ERP 2.4.11
+- Yeni parça ekleme yeniden yazıldı: toplu ve güvenilir tüm-araç şablon dağıtımı.
+- Yeni araçta şase kontrolü: aynı şase varsa kayıt engellenir ve mesaj gösterilir.
+- Araç → Parça Kataloğu sol menüde Dashboard hemen altına taşındı.

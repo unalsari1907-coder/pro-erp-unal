@@ -1,0 +1,15 @@
+PRO ERP 2.5.29
+
+SADECE ALIŞ FATURASI DÜZENLENDİ.
+Diğer çalışan satış/alış irsaliyesi, satış faturası ve sipariş ekranlarına dokunulmadı.
+
+Alış Faturası:
+- Sol stok arama paneli irsaliye düzenindeki 470 px yapıya alındı.
+- Stok arama sonucu kartı diğer belge ekranlarıyla aynı ortak karttır.
+- STOK / RAF rozetleri korunur.
+- AFN / SFI / SFT / SFP / SFL fiyatları tek satırda kompakt gösterilir.
+- Ürün satırları ortak hizalı tabloyu kullanır.
+- Ara Toplam / İskonto Toplam / KDV Toplam / Genel Toplam en altta irsaliye düzeninde kalır.
+- Boş sepet alanı irsaliyedeki görünümle eşitlendi.
+- Header ve arama kartı gereksiz elevation/padding azaltılarak daha düzgün hizalandı.
+- Masaüstü breakpoint 1000 px yapıldı; dar ekranlarda eski mobil akış korunur.
