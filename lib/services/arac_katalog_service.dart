@@ -109,6 +109,15 @@ class AracKatalogService {
     return x.replaceAll(RegExp(r'_+'), '_').replaceAll(RegExp(r'^_|_$'), '');
   }
 
+  static String _plakaNormalize(String value) {
+    final temiz = value.trim().toUpperCase();
+    if (temiz.isEmpty) return '';
+    return temiz.replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  static String _plakaKompakt(dynamic value) =>
+      _norm(_cell(value)).replaceAll('_', '');
+
   static bool _aractanSilinmis(Map<String, dynamic> row) {
     return _cell(row['nitelik']).toUpperCase() == 'SILINDI';
   }
@@ -368,6 +377,7 @@ class AracKatalogService {
     String yakit = '',
     String motorKodu = '',
     String sase = '',
+    String plaka = '',
     String notlar = '',
     String aracSahibi = '',
   }) async {
@@ -392,6 +402,7 @@ class AracKatalogService {
           'yakit': yakit.trim().toUpperCase(),
           'motor_kodu': motorKodu.trim().toUpperCase(),
           'sase': sase.trim().toUpperCase(),
+          'plaka': _plakaNormalize(plaka),
           'notlar': notlar.trim(),
           'arac_sahibi': aracSahibi.trim(),
           'updated_at': DateTime.now().toIso8601String(),
@@ -430,6 +441,7 @@ class AracKatalogService {
     String yakit = '',
     String motorKodu = '',
     String sase = '',
+    String plaka = '',
     String notlar = '',
     String aracSahibi = '',
   }) async {
@@ -454,6 +466,7 @@ class AracKatalogService {
           'yakit': yakit.trim().toUpperCase(),
           'motor_kodu': motorKodu.trim().toUpperCase(),
           'sase': sase.trim().toUpperCase(),
+          'plaka': _plakaNormalize(plaka),
           'notlar': notlar.trim(),
           'arac_sahibi': aracSahibi.trim(),
           'updated_at': DateTime.now().toIso8601String(),
@@ -581,7 +594,7 @@ class AracKatalogService {
     if (temiz.isEmpty) return null;
     var sorgu = _db
         .from('erp_arac_katalog_araclar')
-        .select('arac_id,uretici,model,yil,yillar,motor,motor_kodu,sase')
+        .select('arac_id,uretici,model,yil,yillar,motor,motor_kodu,sase,plaka')
         .eq('sase', temiz);
     final data = await sorgu.limit(10);
     for (final raw in (data as List)) {
@@ -742,6 +755,7 @@ class AracKatalogService {
         'YAKIT': getVal(row, 'YAKIT'),
         'MOTOR_KODU': getVal(row, 'MOTOR_KODU'),
         'SASE': getVal(row, 'SASE'),
+        'PLAKA': getVal(row, 'PLAKA'),
         'NOT': getVal(row, 'NOT'),
         'ARAC_SAHIBI': getVal(row, 'ARAC_SAHIBI'),
       };
@@ -763,6 +777,7 @@ class AracKatalogService {
             'yakit': rec['YAKIT'],
             'motor_kodu': rec['MOTOR_KODU'],
             'sase': rec['SASE'],
+            'plaka': _plakaNormalize(rec['PLAKA'] ?? ''),
             'notlar': rec['NOT'],
             'arac_sahibi': rec['ARAC_SAHIBI'],
             'updated_at': DateTime.now().toIso8601String(),
@@ -902,6 +917,7 @@ class AracKatalogService {
     int? yil,
   ) {
     final sase = _norm(_cell(x['sase']));
+    final plaka = _plakaKompakt(x['plaka']);
     final motorKodu = _norm(_cell(x['motor_kodu']));
     final model = _norm(_cell(x['model']));
     final uretici = _norm(_cell(x['uretici']));
@@ -909,6 +925,8 @@ class AracKatalogService {
     final yakit = _norm(_cell(x['yakit']));
     int puan = 0;
     for (final k in kelimeler) {
+      final kompaktK = k.replaceAll('_', '');
+      if (plaka.isNotEmpty && plaka == kompaktK) puan += 1200;
       if (sase == k) puan += 1000;
       if (motorKodu == k) puan += 700;
       if (model == k) puan += 500;
@@ -982,6 +1000,8 @@ class AracKatalogService {
           x['yakit'],
           x['motor_kodu'],
           x['sase'],
+          x['plaka'],
+          _plakaKompakt(x['plaka']),
           x['notlar'],
           x['arac_sahibi'],
         ].join(' '),

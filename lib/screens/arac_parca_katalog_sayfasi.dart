@@ -253,6 +253,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
     final yakit = TextEditingController();
     final motorKodu = TextEditingController();
     final sase = TextEditingController();
+    final plaka = TextEditingController();
     final notlar = TextEditingController();
     final sahip = TextEditingController();
     final kaydet = await showDialog<bool>(
@@ -353,6 +354,18 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
                   ),
                 ),
                 SizedBox(
+                  width: 200,
+                  child: TextField(
+                    controller: plaka,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'Plaka',
+                      hintText: '58 ABC 123',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                SizedBox(
                   width: 310,
                   child: TextField(
                     controller: sahip,
@@ -400,6 +413,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit,
         motorKodu,
         sase,
+        plaka,
         notlar,
         sahip,
       ])
@@ -417,6 +431,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit,
         motorKodu,
         sase,
+        plaka,
         notlar,
         sahip,
       ])
@@ -446,6 +461,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit: yakit.text,
         motorKodu: motorKodu.text,
         sase: sase.text,
+        plaka: plaka.text,
         notlar: notlar.text,
         aracSahibi: sahip.text,
       );
@@ -474,6 +490,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit,
         motorKodu,
         sase,
+        plaka,
         notlar,
         sahip,
       ])
@@ -493,6 +510,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
     final yakit = TextEditingController(text: _s(arac['yakit']));
     final motorKodu = TextEditingController(text: _s(arac['motor_kodu']));
     final sase = TextEditingController(text: _s(arac['sase']));
+    final plaka = TextEditingController(text: _s(arac['plaka']));
     final notlar = TextEditingController(text: _s(arac['notlar']));
     final sahip = TextEditingController(text: _s(arac['arac_sahibi']));
     final controllers = <TextEditingController>[
@@ -504,6 +522,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
       yakit,
       motorKodu,
       sase,
+      plaka,
       notlar,
       sahip,
     ];
@@ -615,6 +634,18 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
                         labelText: 'Şase',
                         border: OutlineInputBorder(),
                         suffixIcon: Icon(Icons.copy_rounded),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: mobil ? genisAlan : 220,
+                    child: TextField(
+                      controller: plaka,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        labelText: 'Plaka',
+                        hintText: '58 ABC 123',
+                        border: OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -1817,7 +1848,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.directions_car_rounded),
-                hintText: 'Google tarzı ara: 2005 DOBLO 1.3 DIZEL, AVF PASSAT 2005 veya şase...',
+                hintText: 'Google tarzı ara: model, motor, şase veya plaka (58 ABC 123)...',
                 suffixIcon: _q.text.isEmpty
                     ? IconButton(
                         onPressed: _ara,
@@ -2006,7 +2037,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
               'Model Yılı: ${_s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-'} • '
               'Uyum Aralığı: ${_s(arac['yillar']).isNotEmpty ? _s(arac['yillar']) : (_s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-')} • '
               '${_s(arac['motor'])} ${_s(arac['yakit'])}\n'
-              'Motor: ${_s(arac['motor_kodu'])} • Şase: ${_s(arac['sase'])}',
+              'Motor: ${_s(arac['motor_kodu'])} • Plaka: ${_s(arac['plaka']).isEmpty ? '-' : _s(arac['plaka'])} • Şase: ${_s(arac['sase'])}',
             ),
             isThreeLine: true,
             trailing: Row(
@@ -2381,6 +2412,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
                   '${_s(arac['motor'])} ${_s(arac['motor_kodu'])}',
                 ),
                 _bilgi('Yakıt', _s(arac['yakit'])),
+                _kopyalanabilirBilgi('Plaka', _s(arac['plaka']), 'Plaka'),
                 _kopyalanabilirBilgi('Şase', _s(arac['sase']), 'Şase'),
                 if (_s(arac['arac_sahibi']).isNotEmpty)
                   _bilgi('Araç Sahibi', _s(arac['arac_sahibi'])),
