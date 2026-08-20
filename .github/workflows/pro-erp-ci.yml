@@ -1,0 +1,53 @@
+name: PRO ERP Flutter CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pro-erp-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-build-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build Web
+        run: flutter build web --release
+
+      - name: Verify Web Build
+        run: test -f build/web/index.html
+
+      - name: Upload Web Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: PRO-ERP-2.5.30-WEB
+          path: build/web
+          if-no-files-found: error
+          retention-days: 14
