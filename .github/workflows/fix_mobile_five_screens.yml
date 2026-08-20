@@ -1,0 +1,549 @@
+name: Fix five mobile ERP screens
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix_mobile_five_screens.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply mobile layout fixes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if new in text:
+                  return text
+              if old not in text:
+                  raise SystemExit(f'Pattern not found: {label}')
+              return text.replace(old, new, 1)
+
+          # 1) KASA GÜN SONU: dar ekranda sistem bakiyesi + buton aynı satırda sıkışmasın.
+          p = Path('lib/screens/kasa_gun_sonu_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+          old = """                              Row(children: [
+                                Expanded(child: Text('Sistem: ${_para(beklenen)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                const SizedBox(width: 8),
+                                OutlinedButton.icon(onPressed: () => _sayimKaydet(kasa), icon: const Icon(Icons.fact_check_rounded), label: Text(kayit == null ? 'Sayım Yap' : 'Düzelt')),
+                              ]),"""
+          new = """                              Text(
+                                'Sistem: ${_para(beklenen)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _sayimKaydet(kasa),
+                                  icon: const Icon(Icons.fact_check_rounded),
+                                  label: Text(kayit == null ? 'Sayım Yap' : 'Düzelt'),
+                                ),
+                              ),"""
+          s = replace_once(s, old, new, 'kasa mobile footer')
+          p.write_text(s, encoding='utf-8')
+
+          # 2) STOK SAYIMI: ürün bilgisi ve miktar alanları telefonda hiçbir koşulda dar sütuna sıkışmasın.
+          p = Path('lib/screens/sayim_screen.dart')
+          s = p.read_text(encoding='utf-8')
+          old = """                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(_metin(item['urun_adi']), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                              const SizedBox(height: 4),
+                                              Text('ÜRETİCİ KODU: ${_metin(item['uretici_kodu'])}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                                              Text('RAF: ${_metin(item['raf'])}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                                            ],
+                                          ),
+                                        ),"""
+          new = """                                        Expanded(
+                                          child: SizedBox(
+                                            width: double.infinity,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _metin(item['urun_adi']),
+                                                  maxLines: 3,
+                                                  softWrap: true,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'ÜRETİCİ KODU: ${_metin(item['uretici_kodu'])}',
+                                                  maxLines: 2,
+                                                  softWrap: true,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  'RAF: ${_metin(item['raf'])}',
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),"""
+          s = replace_once(s, old, new, 'sayim product info')
+          old = """                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                            decoration: BoxDecoration(color: Colors.blueGrey.withOpacity(.06), borderRadius: BorderRadius.circular(8)),
+                                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                              const Text('Sistem', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                              Text(_miktar(sistem), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                            ]),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: controller,
+                                            textAlign: TextAlign.right,
+                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                            decoration: const InputDecoration(labelText: 'Sayılan', border: OutlineInputBorder(), isDense: true),
+                                          ),
+                                        ),
+                                      ],
+                                    ),"""
+          new = """                                    LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final cokDar = constraints.maxWidth < 330;
+                                        final sistemKutusu = Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blueGrey.withOpacity(.06),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Text('Sistem', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                              Text(_miktar(sistem), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
+                                        );
+                                        final sayilanAlani = TextField(
+                                          controller: controller,
+                                          textAlign: TextAlign.right,
+                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          decoration: const InputDecoration(
+                                            labelText: 'Sayılan',
+                                            border: OutlineInputBorder(),
+                                            isDense: true,
+                                          ),
+                                        );
+                                        if (cokDar) {
+                                          return Column(
+                                            children: [
+                                              sistemKutusu,
+                                              const SizedBox(height: 8),
+                                              sayilanAlani,
+                                            ],
+                                          );
+                                        }
+                                        return Row(
+                                          children: [
+                                            Expanded(child: sistemKutusu),
+                                            const SizedBox(width: 10),
+                                            Expanded(child: sayilanAlani),
+                                          ],
+                                        );
+                                      },
+                                    ),"""
+          s = replace_once(s, old, new, 'sayim quantities')
+          p.write_text(s, encoding='utf-8')
+
+          # 3) MAKBUZLAR: mobil sekmeler ve arama/durum alanı tam genişlikte alt alta.
+          p = Path('lib/screens/makbuzlar_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+          s = replace_once(
+              s,
+              """                        ButtonSegment<String>(value: 'TAHSILAT', icon: Icon(Icons.south_west), label: Text('Tahsilat')),
+                        ButtonSegment<String>(value: 'ODEME', icon: Icon(Icons.north_east), label: Text('Ödeme')),""",
+              """                        ButtonSegment<String>(value: 'TAHSILAT', label: Text('Tahsilat')),
+                        ButtonSegment<String>(value: 'ODEME', label: Text('Ödeme')),""",
+              'makbuz mobile segments',
+          )
+          old = """                  Row(children: [
+                    Expanded(child: TextField(
+                      controller: _aramaController,
+                      decoration: InputDecoration(
+                        hintText: 'Belge no, cari, kasa, açıklama...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _aramaController.text.isEmpty ? null : IconButton(onPressed: _aramaController.clear, icon: const Icon(Icons.clear)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    )),
+                    const SizedBox(width: 8),
+                    SizedBox(width: 115, child: DropdownButtonFormField<String>(
+                      value: _durumFiltresi,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Durum', border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'TÜMÜ', child: Text('Tümü')),
+                        DropdownMenuItem(value: 'AKTİF', child: Text('Aktif')),
+                        DropdownMenuItem(value: 'İPTAL', child: Text('İptal')),
+                      ],
+                      onChanged: (deger) { if (deger == null) return; setState(() => _durumFiltresi = deger); _filtrele(); },
+                    )),
+                  ]),"""
+          new = """                  TextField(
+                    controller: _aramaController,
+                    decoration: InputDecoration(
+                      hintText: 'Belge no, cari, kasa, açıklama...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _aramaController.text.isEmpty
+                          ? null
+                          : IconButton(onPressed: _aramaController.clear, icon: const Icon(Icons.clear)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _durumFiltresi,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Durum', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'TÜMÜ', child: Text('Tümü')),
+                      DropdownMenuItem(value: 'AKTİF', child: Text('Aktif')),
+                      DropdownMenuItem(value: 'İPTAL', child: Text('İptal')),
+                    ],
+                    onChanged: (deger) {
+                      if (deger == null) return;
+                      setState(() => _durumFiltresi = deger);
+                      _filtrele();
+                    },
+                  ),"""
+          s = replace_once(s, old, new, 'makbuz mobile search')
+          p.write_text(s, encoding='utf-8')
+
+          # 4) CARİ DETAY: özet ve aksiyon alanının birbirine girmesini önle.
+          p = Path('lib/screens/cariler_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+          s = replace_once(
+              s,
+              """          content: MobilDialogIcerik(
+            width: 1180,
+            height: 720,""",
+              """          content: MobilDialogIcerik(
+            width: 1180,
+            height: mobil ? MediaQuery.sizeOf(dialogContext).height * 0.50 : 720,""",
+              'cari dialog mobile height',
+          )
+          old = """                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 34,
+                    runSpacing: 10,
+                    children: [
+                      _ekstreOzet(
+                        'Toplam Borç',
+                        _para(toplamBorc),
+                        Colors.red.shade700,
+                      ),
+                      _ekstreOzet(
+                        'Toplam Alacak',
+                        _para(toplamAlacak),
+                        Colors.green.shade700,
+                      ),
+                      _ekstreOzet(
+                        'Son Bakiye',
+                        CariEkstreService.bakiyeMetni(ekstreBakiye),
+                        ekstreBakiye > 0
+                            ? Colors.red.shade700
+                            : ekstreBakiye < 0
+                            ? Colors.green.shade700
+                            : Colors.grey.shade700,
+                      ),
+                    ],
+                  ),"""
+          new = """                  child: mobil
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _ekstreOzet('Toplam Borç', _para(toplamBorc), Colors.red.shade700),
+                            const SizedBox(height: 8),
+                            _ekstreOzet('Toplam Alacak', _para(toplamAlacak), Colors.green.shade700),
+                            const SizedBox(height: 8),
+                            _ekstreOzet(
+                              'Son Bakiye',
+                              CariEkstreService.bakiyeMetni(ekstreBakiye),
+                              ekstreBakiye > 0
+                                  ? Colors.red.shade700
+                                  : ekstreBakiye < 0
+                                      ? Colors.green.shade700
+                                      : Colors.grey.shade700,
+                            ),
+                          ],
+                        )
+                      : Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 34,
+                          runSpacing: 10,
+                          children: [
+                            _ekstreOzet('Toplam Borç', _para(toplamBorc), Colors.red.shade700),
+                            _ekstreOzet('Toplam Alacak', _para(toplamAlacak), Colors.green.shade700),
+                            _ekstreOzet(
+                              'Son Bakiye',
+                              CariEkstreService.bakiyeMetni(ekstreBakiye),
+                              ekstreBakiye > 0
+                                  ? Colors.red.shade700
+                                  : ekstreBakiye < 0
+                                      ? Colors.green.shade700
+                                      : Colors.grey.shade700,
+                            ),
+                          ],
+                        ),"""
+          s = replace_once(s, old, new, 'cari mobile summary')
+          s = replace_once(
+              s,
+              """          actions: [
+            OutlinedButton.icon(""",
+              """          actionsOverflowDirection: VerticalDirection.down,
+          actionsOverflowButtonSpacing: 8,
+          actions: [
+            OutlinedButton.icon(""",
+              'cari action overflow',
+          )
+          p.write_text(s, encoding='utf-8')
+
+          # 5) SATIŞ FATURASI: mobil belge alanları tek sütun; kurumsal başlık mobilde sıkışmaz.
+          p = Path('lib/screens/satis_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+          start = s.index('  Widget _ustBilgiler() {')
+          end = s.index('  Widget _aramaPaneli() {', start)
+          new_method = r'''  Widget _ustBilgiler() {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final mobil = constraints.maxWidth < 720;
+            double alan(double masaustu) => mobil ? constraints.maxWidth : masaustu;
+
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: alan(300),
+                  child: InkWell(
+                    onTap: _irsaliyeAktarModu
+                        ? null
+                        : () async {
+                            final secilen = await CariSecDialog.ac(
+                              context: context,
+                              cariler: _cariler,
+                              seciliCariId: _cariId,
+                              baslik: 'Satış Cari / Müşteri Seç',
+                              aramaIpucu: 'Cari ünvanı ara...',
+                            );
+                            if (secilen == null || !mounted) return;
+                            setState(() => _cariId = secilen);
+                          },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Cari / Müşteri',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: const Icon(Icons.arrow_drop_down),
+                        border: const OutlineInputBorder(),
+                        enabled: !_irsaliyeAktarModu,
+                      ),
+                      child: Text(
+                        _seciliCariAdi(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: alan(180),
+                  child: DropdownButtonFormField<int>(
+                    isExpanded: true,
+                    value: _depoId,
+                    decoration: const InputDecoration(labelText: 'Depo', border: OutlineInputBorder()),
+                    items: _depolar.map((depo) => DropdownMenuItem<int>(
+                      value: int.tryParse(depo['depo_id'].toString()),
+                      child: Text(depo['depo_adi']?.toString() ?? '', overflow: TextOverflow.ellipsis),
+                    )).toList(),
+                    onChanged: _irsaliyeAktarModu ? null : (deger) => setState(() => _depoId = deger),
+                  ),
+                ),
+                SizedBox(
+                  width: alan(180),
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: _kaydediliyor ? null : _irsaliyeAktar,
+                    icon: const Icon(Icons.local_shipping_rounded),
+                    label: Text(_irsaliyeAktarModu ? 'İrsaliyeleri Değiştir' : 'İrsaliye Aktar'),
+                  ),
+                ),
+                SizedBox(
+                  width: alan(175),
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    value: _odemeTipi,
+                    decoration: const InputDecoration(labelText: 'Ödeme Tipi', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'Nakit', child: Text('Nakit')),
+                      DropdownMenuItem(value: 'Kredi Kartı', child: Text('Kredi Kartı')),
+                      DropdownMenuItem(value: 'Havale', child: Text('Havale / EFT')),
+                      DropdownMenuItem(value: 'Veresiye', child: Text('Veresiye')),
+                    ],
+                    onChanged: _odemeTipiDegisti,
+                  ),
+                ),
+                SizedBox(
+                  width: alan(210),
+                  child: DropdownButtonFormField<int>(
+                    isExpanded: true,
+                    value: _veresiyeMi ? null : _kasaId,
+                    decoration: InputDecoration(
+                      labelText: 'Kasa / Banka',
+                      hintText: _veresiyeMi ? 'Veresiyede kullanılmaz' : null,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: _kasalar.map((kasa) => DropdownMenuItem<int>(
+                      value: int.tryParse(kasa['kasa_id'].toString()),
+                      child: Text(kasa['kasa_adi']?.toString() ?? '', overflow: TextOverflow.ellipsis),
+                    )).toList(),
+                    onChanged: _veresiyeMi ? null : (deger) => setState(() => _kasaId = deger),
+                  ),
+                ),
+                SizedBox(
+                  width: alan(155),
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    value: _fiyatTipi,
+                    decoration: const InputDecoration(labelText: 'Fiyat Tipi', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'PERAKENDE', child: Text('Perakende')),
+                      DropdownMenuItem(value: 'TOPTAN', child: Text('Toptan')),
+                    ],
+                    onChanged: _fiyatTipiDegisti,
+                  ),
+                ),
+                SizedBox(
+                  width: alan(170),
+                  child: TextField(
+                    controller: _faturaNoController,
+                    decoration: const InputDecoration(labelText: 'Fatura No', border: OutlineInputBorder()),
+                  ),
+                ),
+                SizedBox(
+                  width: alan(170),
+                  child: TextField(
+                    controller: _belgeNoController,
+                    decoration: const InputDecoration(labelText: 'Belge No', border: OutlineInputBorder()),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+'''
+          s = s[:start] + new_method + s[end:]
+
+          start = s.index('  Widget _kurumsalFaturaBasligi() {')
+          end = s.index('  Widget _darDuzen() {', start)
+          new_header = r'''  Widget _kurumsalFaturaBasligi() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.blueGrey.shade200),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final mobil = constraints.maxWidth < 720;
+          final marka = Row(
+            children: <Widget>[
+              Container(
+                width: 50,
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.receipt_long_rounded, color: Colors.blue.shade800),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('ÜNAL YEDEK PARÇA', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+                    Text('Kurumsal ERP • Resmi Belge Girişi', maxLines: 2),
+                  ],
+                ),
+              ),
+            ],
+          );
+          final baslik = Text(
+            'SATIŞ FATURASI',
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Colors.blueGrey.shade900),
+          );
+          if (mobil) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                marka,
+                const Divider(height: 22),
+                baslik,
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: marka),
+              const SizedBox(width: 16),
+              baslik,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+'''
+          s = s[:start] + new_header + s[end:]
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          git diff --check
+          git status --short
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/screens/kasa_gun_sonu_sayfasi.dart lib/screens/sayim_screen.dart lib/screens/makbuzlar_sayfasi.dart lib/screens/cariler_sayfasi.dart lib/screens/satis_sayfasi.dart
+          if git diff --cached --quiet; then
+            echo "Mobile fixes already applied."
+            exit 0
+          fi
+          git commit -m "Fix five mobile ERP screen layouts"
+          git push origin HEAD:main
