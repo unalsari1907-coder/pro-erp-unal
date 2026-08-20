@@ -1,0 +1,165 @@
+name: Arac katalog mobil bilgi kartini iki sutun yap
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix_catalog_mobile_two_column_2532.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mobil arac bilgi kartini iki sutuna cevir
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('lib/screens/arac_parca_katalog_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+
+          old = '''            child: Wrap(
+              spacing: mobil ? 16 : 24,
+              runSpacing: mobil ? 16 : 8,
+              children: <Widget>[
+                SizedBox(
+                  width: mobil ? (cokDarMobil ? 145 : 190) : 190,
+                  child: _bilgi('Araç', '${_s(arac['uretici'])} ${_s(arac['model'])}'),
+                ),
+                _bilgi(
+                  'Model Yılı',
+                  _s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-',
+                ),
+                _bilgi(
+                  'Uyum Aralığı',
+                  _s(arac['yillar']).isNotEmpty
+                      ? _s(arac['yillar'])
+                      : (_s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-'),
+                ),
+                _bilgi(
+                  'Motor',
+                  '${_s(arac['motor'])} ${_s(arac['motor_kodu'])}',
+                ),
+                _bilgi('Yakıt', _s(arac['yakit'])),
+                _kopyalanabilirBilgi('Plaka', _s(arac['plaka']), 'Plaka'),
+                _kopyalanabilirBilgi('Şase', _s(arac['sase']), 'Şase'),
+                if (_s(arac['arac_sahibi']).isNotEmpty)
+                  _bilgi('Araç Sahibi', _s(arac['arac_sahibi'])),
+                if (_s(arac['notlar']).isNotEmpty)
+                  SizedBox(
+                    width: mobil ? (cokDarMobil ? 160 : 260) : 520,
+                    child: _bilgi('Not / Ek Bilgi', _s(arac['notlar'])),
+                  ),
+              ],
+            ),'''
+
+          new = '''            child: LayoutBuilder(
+              builder: (context, box) {
+                final mobilHucre = ((box.maxWidth - 12) / 2).clamp(130.0, 280.0).toDouble();
+                final hucre = mobil ? mobilHucre : 190.0;
+                return Wrap(
+                  spacing: mobil ? 12 : 24,
+                  runSpacing: mobil ? 12 : 8,
+                  children: <Widget>[
+                    _bilgi(
+                      'Araç',
+                      '${_s(arac['uretici'])} ${_s(arac['model'])}',
+                      width: hucre,
+                    ),
+                    _bilgi(
+                      'Model Yılı',
+                      _s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-',
+                      width: hucre,
+                    ),
+                    _bilgi(
+                      'Uyum Aralığı',
+                      _s(arac['yillar']).isNotEmpty
+                          ? _s(arac['yillar'])
+                          : (_s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-'),
+                      width: hucre,
+                    ),
+                    _bilgi(
+                      'Motor',
+                      '${_s(arac['motor'])} ${_s(arac['motor_kodu'])}',
+                      width: hucre,
+                    ),
+                    _bilgi('Yakıt', _s(arac['yakit']), width: hucre),
+                    _kopyalanabilirBilgi(
+                      'Plaka',
+                      _s(arac['plaka']),
+                      'Plaka',
+                      width: hucre,
+                    ),
+                    _kopyalanabilirBilgi(
+                      'Şase',
+                      _s(arac['sase']),
+                      'Şase',
+                      width: mobil ? box.maxWidth : 250,
+                    ),
+                    if (_s(arac['arac_sahibi']).isNotEmpty)
+                      _bilgi(
+                        'Araç Sahibi',
+                        _s(arac['arac_sahibi']),
+                        width: hucre,
+                      ),
+                    if (_s(arac['notlar']).isNotEmpty)
+                      _bilgi(
+                        'Not / Ek Bilgi',
+                        _s(arac['notlar']),
+                        width: mobil ? box.maxWidth : 520,
+                      ),
+                  ],
+                );
+              },
+            ),'''
+
+          if old not in s:
+              raise SystemExit('Mobil bilgi karti blogu bulunamadi')
+          s = s.replace(old, new, 1)
+
+          old = '''  Widget _kopyalanabilirBilgi(String baslik, String deger, String etiket) {
+    return SizedBox(
+      width: 250,'''
+          new = '''  Widget _kopyalanabilirBilgi(
+    String baslik,
+    String deger,
+    String etiket, {
+    double width = 250,
+  }) {
+    return SizedBox(
+      width: width,'''
+          if old not in s:
+              raise SystemExit('Kopyalanabilir bilgi helper bulunamadi')
+          s = s.replace(old, new, 1)
+
+          old = '''  Widget _bilgi(String baslik, String deger) {
+    return SizedBox(
+      width: 190,'''
+          new = '''  Widget _bilgi(
+    String baslik,
+    String deger, {
+    double width = 190,
+  }) {
+    return SizedBox(
+      width: width,'''
+          if old not in s:
+              raise SystemExit('Bilgi helper bulunamadi')
+          s = s.replace(old, new, 1)
+
+          s = s.replace("    final cokDarMobil = ekranGenisligi < 520;\n", "", 1)
+          p.write_text(s, encoding='utf-8')
+      - name: Commit changes
+        run: |
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/screens/arac_parca_katalog_sayfasi.dart
+          if git diff --cached --quiet; then
+            echo "Already applied"
+            exit 0
+          fi
+          git commit -m "Mobil arac katalog bilgi kartini iki sutun yap"
+          git push origin HEAD:main
