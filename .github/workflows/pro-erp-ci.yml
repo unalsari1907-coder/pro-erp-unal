@@ -61,3 +61,5 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+# trigger: PRO ERP 2.5.30 pages deploy
