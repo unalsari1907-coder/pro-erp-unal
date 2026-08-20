@@ -16,26 +16,36 @@ import 'services/erp_error_logger.dart';
 import 'models/stok_model.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Supabase Canlı Bağlantısı
-  await Supabase.initialize(
-    url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabaseAnonKey,
-  );
-
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    ErpErrorLogger.kaydet(details.exception, details.stack, kaynak: 'FLUTTER');
-  };
-
+  // Flutter binding, Supabase initialization ve runApp aynı Zone içinde
+  // çalışmalı. Aksi halde web/debug ortamında Zone mismatch oluşur.
   runZonedGuarded(
-    () => runApp(const ProERPApp()),
-    (error, stack) => ErpErrorLogger.kaydet(error, stack, kaynak: 'ZONE'),
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      await Supabase.initialize(
+        url: AppConfig.supabaseUrl,
+        anonKey: AppConfig.supabaseAnonKey,
+      );
+
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        unawaited(
+          ErpErrorLogger.kaydet(
+            details.exception,
+            details.stack,
+            kaynak: 'FLUTTER',
+          ),
+        );
+      };
+
+      runApp(const ProERPApp());
+    },
+    (error, stack) {
+      unawaited(ErpErrorLogger.kaydet(error, stack, kaynak: 'ZONE'));
+    },
   );
 }
 
-// Global Supabase İstemcisi
 final supabase = Supabase.instance.client;
 
 class ProERPApp extends StatelessWidget {
@@ -54,8 +64,6 @@ class ProERPApp extends StatelessWidget {
         final ekran = MediaQuery.of(context);
         final mobil = ekran.size.width < 720;
 
-        // Küçük ekranlarda yazı ve kontrol yoğunluğunu hafifçe azalt.
-        // Masaüstünde mevcut görünüm aynen korunur.
         return MediaQuery(
           data: ekran.copyWith(
             textScaler: TextScaler.linear(mobil ? 0.92 : 1.0),
@@ -69,7 +77,6 @@ class ProERPApp extends StatelessWidget {
           ),
         );
       },
-      // İlk açılış ekranı Dashboard (Ana Sayfa) olarak ayarlandı
       home: const KimlikDogrulamaKapisi(),
     );
   }
@@ -147,7 +154,6 @@ class _AnaSayfaState extends State<AnaSayfa> {
   bool yukleniyor = true;
   String? hataMesaji;
 
-  // Supabase üzerinden verileri yükleme fonksiyonu
   Future<void> verileriYukle({String aramaMetni = ""}) async {
     setState(() {
       yukleniyor = true;
@@ -307,7 +313,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                                     padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
                                       border: Border.all(
-                                          color: Colors.grey.shade400),
+                                        color: Colors.grey.shade400,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Column(
@@ -325,7 +332,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                                         Text('Marka: ${urun.marka}'),
                                         Text('Araç: ${urun.arac}'),
                                         Text(
-                                            'Üretici Kodu: ${urun.ureticiKodu}'),
+                                          'Üretici Kodu: ${urun.ureticiKodu}',
+                                        ),
                                         Text('Barkod: ${urun.barkod}'),
                                         Text('OEM: ${urun.oemNo}'),
                                         Text('Cross: ${urun.cross}'),
