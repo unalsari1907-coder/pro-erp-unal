@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/apply_finance_shortcuts_2531_v4.yml'
+      - '.github/scripts/apply_finance_shortcuts_2531.py'
 
 permissions:
   contents: write
