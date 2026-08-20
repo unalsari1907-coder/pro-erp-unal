@@ -717,6 +717,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit: yakit.text,
         motorKodu: motorKodu.text,
         sase: sase.text,
+        plaka: plaka.text,
         notlar: notlar.text,
         aracSahibi: sahip.text,
       );
