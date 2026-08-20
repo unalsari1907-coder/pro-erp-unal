@@ -2,6 +2,7 @@
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/stok_model.dart';
 import '../services/supabase_service.dart';
@@ -58,6 +59,7 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
   static const double _darMenu = 76;
 
   final TextEditingController _menuAramaController = TextEditingController();
+  final FocusNode _menuAramaFocusNode = FocusNode(debugLabel: 'erpMenuArama');
   final ScrollController _menuScrollController = ScrollController();
 
   String _seciliSayfa = 'dashboard';
@@ -144,6 +146,7 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
   @override
   void dispose() {
     _menuAramaController.dispose();
+    _menuAramaFocusNode.dispose();
     _menuScrollController.dispose();
     super.dispose();
   }
@@ -1209,6 +1212,7 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
       child: TextField(
         controller: _menuAramaController,
+                focusNode: _menuAramaFocusNode,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Menü ara...',
@@ -2160,7 +2164,12 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () { _menuAramaFocusNode.requestFocus(); },
+        const SingleActivator(LogicalKeyboardKey.escape): () { if (_seciliSayfa != 'dashboard') { setState(() => _seciliSayfa = 'dashboard'); } else { Navigator.of(context).maybePop(); } },
+      },
+      child: Focus(autofocus: true, child: LayoutBuilder(
       builder: (context, constraints) {
         final mobil = constraints.maxWidth < 900;
         _mobilMod = mobil;
@@ -2212,6 +2221,7 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
           ),
         );
       },
+      )),
     );
   }
 }

@@ -28,6 +28,7 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
   final TextEditingController _aciklamaController = TextEditingController();
 
   final TextEditingController _aramaController = TextEditingController();
+  final FocusNode _aramaFocusNode = FocusNode(debugLabel: 'kasaArama');
 
   bool _yukleniyor = true;
   bool _kaydediliyor = false;
@@ -60,6 +61,7 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
     _belgeNoController.dispose();
     _aciklamaController.dispose();
     _aramaController.dispose();
+    _aramaFocusNode.dispose();
 
     super.dispose();
   }
@@ -80,7 +82,7 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
             .order('unvan'),
         SupabaseService.supabase
             .from('kasalar')
-            .select('kasa_id, kasa_adi, kasa_tipi')
+            .select('kasa_id, kasa_adi, kasa_tipi, kk_limit')
             .order('kasa_adi'),
         SupabaseService.supabase
             .from('kasa_hareket')
@@ -393,6 +395,22 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
 
       if (!mounted) return;
 
+      final yeniHareket = <String, dynamic>{
+        'hareket_id': 'yeni',
+        'tarih': _islemTarihi.toIso8601String(),
+        'kasa_id': kasaId,
+        'tip': _islemTipi == 'TAHSILAT' ? 'GIRIS' : 'CIKIS',
+        'tutar': tutar,
+        'aciklama': aciklama,
+        'cari_id': cariId,
+        'kullanici': YetkiService.aktifKullanici,
+        'belge_no': belgeNo,
+        'cari_unvan': _metin(cari['unvan']),
+        'kasa_adi': _metin(kasa['kasa_adi']),
+      };
+      setState(() { _tumHareketler = <Map<String, dynamic>>[yeniHareket, ..._tumHareketler]; });
+      _hareketleriFiltrele();
+
       _mesaj(
         _islemTipi == 'TAHSILAT'
             ? 'Tahsilat başarıyla kaydedildi.'
@@ -403,6 +421,7 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
       _tutarController.clear();
       _aciklamaController.clear();
 
+      await Future<void>.delayed(const Duration(milliseconds: 250));
       await _ilkVerileriYukle();
     } catch (e) {
       if (!mounted) return;
@@ -511,6 +530,46 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
     final tip = _metin(hareket['tip']).toUpperCase();
 
     return tip == 'GIRIS' || tip == 'GİRİŞ';
+  }
+
+  bool _krediKartiMi(Map<String, dynamic> kasa) {
+    final ad = _metin(kasa['kasa_adi']).toUpperCase();
+    final tip = _metin(kasa['kasa_tipi']).toUpperCase();
+    return tip.contains('POS') || tip.contains('KART') || ad.contains('POS') || ad.contains('K.K') || ad.contains('KREDI') || ad.contains('KREDİ') || ad.contains('KART');
+  }
+
+  double _kkLimit(Map<String, dynamic> kasa) => _sayi(kasa['kk_limit']);
+
+  double _kkKullanilan(Map<String, dynamic> kasa) {
+    final id = int.tryParse(kasa['kasa_id']?.toString() ?? '') ?? 0;
+    final bakiye = _kasaBakiyesi(id);
+    return bakiye < 0 ? -bakiye : 0.0;
+  }
+
+  double _kkKalan(Map<String, dynamic> kasa) {
+    final kalan = _kkLimit(kasa) - _kkKullanilan(kasa);
+    return kalan < 0 ? 0 : kalan;
+  }
+
+  Future<void> _kkLimitDuzenle(Map<String, dynamic> kasa) async {
+    final kasaId = int.tryParse(kasa['kasa_id']?.toString() ?? '') ?? 0;
+    if (kasaId <= 0) return;
+    final controller = TextEditingController(text: _kkLimit(kasa) == 0 ? '' : _kkLimit(kasa).toStringAsFixed(2));
+    final kaydet = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: Text('${_metin(kasa['kasa_adi'])} • K.K Limiti'),
+      content: TextField(controller: controller, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))], decoration: const InputDecoration(labelText: 'Kredi Kartı Limiti', prefixIcon: Icon(Icons.credit_card_rounded), suffixText: '₺', border: OutlineInputBorder())),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Vazgeç')), FilledButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.save_rounded), label: const Text('Kaydet'))],
+    ));
+    if (kaydet != true) { controller.dispose(); return; }
+    final limit = double.tryParse(controller.text.trim().replaceAll(',', '.')) ?? 0.0;
+    controller.dispose();
+    if (limit < 0) { _mesaj('Kredi kartı limiti negatif olamaz.', Colors.red); return; }
+    try {
+      await SupabaseService.supabase.from('kasalar').update({'kk_limit': limit}).eq('kasa_id', kasaId);
+      if (!mounted) return;
+      setState(() => kasa['kk_limit'] = limit);
+      _mesaj('Kredi kartı limiti güncellendi.', Colors.green);
+    } catch (e) { if (mounted) _mesaj('K.K limiti kaydedilemedi: $e', Colors.red); }
   }
 
   double _kasaBakiyesi(int kasaId) {
@@ -1217,6 +1276,13 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
                           color: bakiye >= 0 ? Colors.blue : Colors.red,
                         ),
                       ),
+                      if (_krediKartiMi(kasa)) ...[
+                        const SizedBox(height: 4),
+                        Row(children: [
+                          Expanded(child: Text(_kkLimit(kasa) > 0 ? 'Limit: ${_para(_kkLimit(kasa))} • Kalan: ${_para(_kkKalan(kasa))}' : 'K.K limiti tanımlanmadı', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kkLimit(kasa) > 0 ? Colors.green.shade700 : Colors.orange.shade700))),
+                          IconButton(tooltip: 'K.K limitini düzenle', visualDensity: VisualDensity.compact, onPressed: () => _kkLimitDuzenle(kasa), icon: const Icon(Icons.edit_rounded, size: 17)),
+                        ]),
+                      ],
                     ],
                   ),
                 ),
@@ -1307,7 +1373,11 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () { _aramaFocusNode.requestFocus(); },
+      },
+      child: Focus(autofocus: true, child: Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: Text(
@@ -1362,6 +1432,7 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
                       Expanded(
                         child: TextField(
                           controller: _aramaController,
+                          focusNode: _aramaFocusNode,
                           decoration: InputDecoration(
                             hintText: 'Cari, kasa, belge no, açıklama...',
                             prefixIcon: const Icon(Icons.search),
@@ -1419,6 +1490,7 @@ class _KasaBankaSayfasiState extends State<KasaBankaSayfasi> {
                 Expanded(child: _hareketListesi()),
               ],
             ),
+      )),
     );
   }
 }
