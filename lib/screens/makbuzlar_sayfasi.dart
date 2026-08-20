@@ -673,151 +673,75 @@ class _MakbuzlarSayfasiState extends State<MakbuzlarSayfasi> {
 
   Widget _makbuzKarti(Map<String, dynamic> makbuz) {
     final renk = _turRengi(makbuz);
+    final mobil = MobilUyum.telefon(context);
+
+    if (mobil) {
+      return Card(
+        margin: EdgeInsets.zero,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _detayGoster(makbuz),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  CircleAvatar(backgroundColor: renk.withOpacity(.14), child: Icon(_turIkonu(makbuz), color: renk)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(_metin(makbuz['cari_unvan']), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(_metin(makbuz['belge_no']), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                  ])),
+                  Text(_para(makbuz['tutar']), style: TextStyle(color: renk, fontWeight: FontWeight.bold)),
+                ]),
+                const SizedBox(height: 8),
+                Wrap(spacing: 10, runSpacing: 5, children: [
+                  Text('Tür: ${_odemeTuru(makbuz)}'),
+                  Text('Kasa: ${_metin(makbuz['kasa_adi'])}'),
+                  Text('Tarih: ${_tarih(makbuz['tarih'])}'),
+                ]),
+                const SizedBox(height: 5),
+                Text('Not: ${_metin(makbuz['aciklama'])}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          _detayGoster(makbuz);
-        },
+        onTap: () => _detayGoster(makbuz),
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: MobilYatayRow(
-            children: [
-              CircleAvatar(
-                backgroundColor: renk.withOpacity(0.14),
-                child: Icon(
-                  _turIkonu(makbuz),
-                  color: renk,
-                ),
-              ),
-              const SizedBox(width: 14),
-              SizedBox(
-                width: 190,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _metin(makbuz['belge_no']),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _tarih(makbuz['tarih']),
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _metin(makbuz['cari_unvan']),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Wrap(
-                      spacing: 18,
-                      runSpacing: 4,
-                      children: [
-                        Text(
-                          'Tür: ${_odemeTuru(makbuz)}',
-                        ),
-                        Text(
-                          'Kasa: ${_metin(makbuz['kasa_adi'])}',
-                        ),
-                        Text(
-                          'Kullanıcı: ${_metin(makbuz['kullanici'])}',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Not: ${_metin(makbuz['aciklama'])}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 170,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _para(makbuz['tutar']),
-                      style: TextStyle(
-                        color: renk,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      makbuz['iptal_mi'] == true
-                          ? 'İPTAL'
-                          : 'AKTİF',
-                      style: TextStyle(
-                        color: renk,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuButton<String>(
-                tooltip: 'İşlemler',
-                onSelected: (deger) {
-                  if (deger == 'detay') {
-                    _detayGoster(makbuz);
-                  } else if (deger == 'iptal') {
-                    _makbuzIptalEt(makbuz);
-                  }
-                },
-                itemBuilder: (context) {
-                  return [
-                    const PopupMenuItem<String>(
-                      value: 'detay',
-                      child: ListTile(
-                        leading: Icon(Icons.visibility),
-                        title: Text('Görüntüle'),
-                      ),
-                    ),
-                    if (makbuz['iptal_mi'] != true)
-                      const PopupMenuItem<String>(
-                        value: 'iptal',
-                        child: ListTile(
-                          leading: Icon(
-                            Icons.cancel,
-                            color: Colors.red,
-                          ),
-                          title: Text(
-                            'Makbuzu İptal Et',
-                            style: TextStyle(
-                              color: Colors.red,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ];
-                },
-              ),
-            ],
-          ),
+          child: Row(children: [
+            CircleAvatar(backgroundColor: renk.withOpacity(.14), child: Icon(_turIkonu(makbuz), color: renk)),
+            const SizedBox(width: 14),
+            SizedBox(width: 190, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_metin(makbuz['belge_no']), style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(_tarih(makbuz['tarih']), style: const TextStyle(fontSize: 12)),
+            ])),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_metin(makbuz['cari_unvan']), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 5),
+              Wrap(spacing: 18, runSpacing: 4, children: [
+                Text('Tür: ${_odemeTuru(makbuz)}'),
+                Text('Kasa: ${_metin(makbuz['kasa_adi'])}'),
+                Text('Kullanıcı: ${_metin(makbuz['kullanici'])}'),
+              ]),
+              const SizedBox(height: 4),
+              Text('Not: ${_metin(makbuz['aciklama'])}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            ])),
+            SizedBox(width: 170, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(_para(makbuz['tutar']), style: TextStyle(color: renk, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(makbuz['iptal_mi'] == true ? 'İPTAL' : 'AKTİF', style: TextStyle(color: renk, fontSize: 11, fontWeight: FontWeight.bold)),
+            ])),
+          ]),
         ),
       ),
     );
@@ -837,198 +761,109 @@ class _MakbuzlarSayfasiState extends State<MakbuzlarSayfasi> {
 
   @override
   Widget build(BuildContext context) {
+    final mobil = MobilUyum.telefon(context);
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text(
-          'TAHSİLAT / ÖDEME MAKBUZLARI',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text(mobil ? 'MAKBUZLAR' : 'TAHSİLAT / ÖDEME MAKBUZLARI', style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          MobilAppBarActions(
-            children: [
-          IconButton(
-            tooltip: 'Yenile',
-            onPressed: _verileriYukle,
-            icon: const Icon(Icons.refresh),
-          ),
-          const SizedBox(width: 8),
-        
-            ],
-          ),
+          IconButton(tooltip: 'Yenile', onPressed: _verileriYukle, icon: const Icon(Icons.refresh)),
+          const SizedBox(width: 6),
         ],
       ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                MobilYatayRow(
-                  children: [
-                    Expanded(
-                      child: SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment<String>(
-                            value: 'TAHSILAT',
-                            icon: Icon(Icons.south_west),
-                            label: Text(
-                              'Tahsilat Makbuzları',
-                            ),
-                          ),
-                          ButtonSegment<String>(
-                            value: 'ODEME',
-                            icon: Icon(Icons.north_east),
-                            label: Text(
-                              'Ödeme Makbuzları',
-                            ),
-                          ),
-                        ],
-                        selected: {_aktifTur},
-                        onSelectionChanged: (secim) {
-                          setState(() {
-                            _aktifTur = secim.first;
-                          });
-
-                          _filtrele();
-                        },
-                      ),
+      body: Column(children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(12),
+          child: mobil
+              ? Column(children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment<String>(value: 'TAHSILAT', icon: Icon(Icons.south_west), label: Text('Tahsilat')),
+                        ButtonSegment<String>(value: 'ODEME', icon: Icon(Icons.north_east), label: Text('Ödeme')),
+                      ],
+                      selected: {_aktifTur},
+                      onSelectionChanged: (secim) { setState(() => _aktifTur = secim.first); _filtrele(); },
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(
+                      controller: _aramaController,
+                      decoration: InputDecoration(
+                        hintText: 'Belge no, cari, kasa, açıklama...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _aramaController.text.isEmpty ? null : IconButton(onPressed: _aramaController.clear, icon: const Icon(Icons.clear)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    )),
+                    const SizedBox(width: 8),
+                    SizedBox(width: 115, child: DropdownButtonFormField<String>(
+                      value: _durumFiltresi,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Durum', border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'TÜMÜ', child: Text('Tümü')),
+                        DropdownMenuItem(value: 'AKTİF', child: Text('Aktif')),
+                        DropdownMenuItem(value: 'İPTAL', child: Text('İptal')),
+                      ],
+                      onChanged: (deger) { if (deger == null) return; setState(() => _durumFiltresi = deger); _filtrele(); },
+                    )),
+                  ]),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text('Aktif Toplam: ${_para(_toplamTutar)}', style: TextStyle(fontWeight: FontWeight.bold, color: _aktifTur == 'TAHSILAT' ? Colors.green.shade700 : Colors.red.shade700)),
+                  ),
+                ])
+              : Column(children: [
+                  Row(children: [
+                    Expanded(child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment<String>(value: 'TAHSILAT', icon: Icon(Icons.south_west), label: Text('Tahsilat Makbuzları')),
+                        ButtonSegment<String>(value: 'ODEME', icon: Icon(Icons.north_east), label: Text('Ödeme Makbuzları')),
+                      ],
+                      selected: {_aktifTur},
+                      onSelectionChanged: (secim) { setState(() => _aktifTur = secim.first); _filtrele(); },
+                    )),
                     const SizedBox(width: 12),
-                    Container(
-                      width: 230,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _aktifTur == 'TAHSILAT'
-                            ? Colors.green.shade50
-                            : Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text(
-                            'Aktif Makbuz Toplamı',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            _para(_toplamTutar),
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.bold,
-                              color: _aktifTur == 'TAHSILAT'
-                                  ? Colors.green.shade700
-                                  : Colors.red.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                MobilYatayRow(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _aramaController,
-                        decoration: InputDecoration(
-                          hintText:
-                              'Belge no, cari, kasa, ödeme türü, açıklama, kullanıcı...',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon:
-                              _aramaController.text.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      onPressed:
-                                          _aramaController.clear,
-                                      icon:
-                                          const Icon(Icons.clear),
-                                    ),
-                          border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
+                    Container(width: 230, padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: _aktifTur == 'TAHSILAT' ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(10)), child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      const Text('Aktif Makbuz Toplamı', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      const SizedBox(height: 3),
+                      Text(_para(_toplamTutar), style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: _aktifTur == 'TAHSILAT' ? Colors.green.shade700 : Colors.red.shade700)),
+                    ])),
+                  ]),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(child: TextField(controller: _aramaController, decoration: InputDecoration(hintText: 'Belge no, cari, kasa, ödeme türü, açıklama, kullanıcı...', prefixIcon: const Icon(Icons.search), suffixIcon: _aramaController.text.isEmpty ? null : IconButton(onPressed: _aramaController.clear, icon: const Icon(Icons.clear)), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))))),
                     const SizedBox(width: 12),
-                    SizedBox(
-                      width: 165,
-                      child: DropdownButtonFormField<String>(
-                        value: _durumFiltresi,
-                        decoration: const InputDecoration(
-                          labelText: 'Durum',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'TÜMÜ',
-                            child: Text('Tüm Durumlar'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'AKTİF',
-                            child: Text('Aktif'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'İPTAL',
-                            child: Text('İptal'),
-                          ),
-                        ],
-                        onChanged: (deger) {
-                          if (deger == null) return;
-
-                          setState(() {
-                            _durumFiltresi = deger;
-                          });
-
-                          _filtrele();
-                        },
+                    SizedBox(width: 165, child: DropdownButtonFormField<String>(value: _durumFiltresi, decoration: const InputDecoration(labelText: 'Durum', border: OutlineInputBorder()), items: const [
+                      DropdownMenuItem(value: 'TÜMÜ', child: Text('Tüm Durumlar')),
+                      DropdownMenuItem(value: 'AKTİF', child: Text('Aktif')),
+                      DropdownMenuItem(value: 'İPTAL', child: Text('İptal')),
+                    ], onChanged: (deger) { if (deger == null) return; setState(() => _durumFiltresi = deger); _filtrele(); })),
+                  ]),
+                ]),
+        ),
+        Expanded(
+          child: _yukleniyor
+              ? const Center(child: CircularProgressIndicator())
+              : _gorunenMakbuzlar.isEmpty
+                  ? const Center(child: Text('Makbuz bulunamadı.', style: TextStyle(fontSize: 18)))
+                  : RefreshIndicator(
+                      onRefresh: _verileriYukle,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: _gorunenMakbuzlar.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) => _makbuzKarti(_gorunenMakbuzlar[index]),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _yukleniyor
-                ? const Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : _gorunenMakbuzlar.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Makbuz bulunamadı.',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _verileriYukle,
-                        child: ListView.separated(
-                          padding: const EdgeInsets.all(12),
-                          itemCount:
-                              _gorunenMakbuzlar.length,
-                          separatorBuilder: (_, __) {
-                            return const SizedBox(height: 8);
-                          },
-                          itemBuilder: (context, index) {
-                            return _makbuzKarti(
-                              _gorunenMakbuzlar[index],
-                            );
-                          },
-                        ),
-                      ),
-          ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 }

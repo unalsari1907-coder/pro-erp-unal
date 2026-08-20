@@ -122,7 +122,7 @@ class MobilDialogIcerik extends StatelessWidget {
 
     final ekran = MediaQuery.sizeOf(context);
     final maxWidth = math.max(260.0, ekran.width - 32.0).toDouble();
-    final maxHeight = math.max(320.0, ekran.height - 120.0).toDouble();
+    final maxHeight = math.max(260.0, ekran.height - 260.0).toDouble();
 
     final hedefWidth = width == null
         ? maxWidth

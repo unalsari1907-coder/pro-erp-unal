@@ -254,25 +254,31 @@ class _SayimScreenState extends State<SayimScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mobil = MediaQuery.sizeOf(context).width < 720;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text(
-          'STOK SAYIMI',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('STOK SAYIMI', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          ElevatedButton.icon(
-            onPressed: _kaydediliyor ? null : _kaydet,
-            icon: const Icon(Icons.save_rounded),
-            label: Text(_kaydediliyor ? 'Kaydediliyor...' : 'Sayımı Kaydet'),
-          ),
-          const SizedBox(width: 10),
+          if (!mobil)
+            ElevatedButton.icon(
+              onPressed: _kaydediliyor ? null : _kaydet,
+              icon: const Icon(Icons.save_rounded),
+              label: Text(_kaydediliyor ? 'Kaydediliyor...' : 'Sayımı Kaydet'),
+            )
+          else
+            IconButton(
+              tooltip: 'Sayımı Kaydet',
+              onPressed: _kaydediliyor ? null : _kaydet,
+              icon: const Icon(Icons.save_rounded),
+            ),
+          const SizedBox(width: 6),
           IconButton(
             onPressed: _yukleniyor ? null : _depoStoklariniYukle,
             icon: const Icon(Icons.refresh_rounded),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
@@ -280,149 +286,160 @@ class _SayimScreenState extends State<SayimScreen> {
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 320,
-                  child: DropdownButtonFormField<int>(
-                    value: _depoId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Depo',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _depolar.map((depo) {
-                      return DropdownMenuItem<int>(
-                        value: int.tryParse(depo['depo_id'].toString()),
-                        child: Text(
-                          '${_metin(depo['depo_adi'])} '
-                          '(${_metin(depo['depo_tipi'])})',
+            child: mobil
+                ? Column(
+                    children: [
+                      DropdownButtonFormField<int>(
+                        value: _depoId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Depo', border: OutlineInputBorder()),
+                        items: _depolar.map((depo) => DropdownMenuItem<int>(
+                          value: int.tryParse(depo['depo_id'].toString()),
+                          child: Text('${_metin(depo['depo_adi'])} (${_metin(depo['depo_tipi'])})', overflow: TextOverflow.ellipsis),
+                        )).toList(),
+                        onChanged: (value) async {
+                          setState(() => _depoId = value);
+                          await _depoStoklariniYukle();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _aramaController,
+                        decoration: InputDecoration(
+                          hintText: 'Ürün, kod, OEM, marka, RAF ara...',
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: _aramaController.text.isEmpty ? null : IconButton(onPressed: _aramaController.clear, icon: const Icon(Icons.clear_rounded)),
+                          border: const OutlineInputBorder(),
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (value) async {
-                      setState(() => _depoId = value);
-                      await _depoStoklariniYukle();
-                    },
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      SizedBox(
+                        width: 320,
+                        child: DropdownButtonFormField<int>(
+                          value: _depoId,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Depo', border: OutlineInputBorder()),
+                          items: _depolar.map((depo) => DropdownMenuItem<int>(
+                            value: int.tryParse(depo['depo_id'].toString()),
+                            child: Text('${_metin(depo['depo_adi'])} (${_metin(depo['depo_tipi'])})'),
+                          )).toList(),
+                          onChanged: (value) async {
+                            setState(() => _depoId = value);
+                            await _depoStoklariniYukle();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(child: TextField(
+                        controller: _aramaController,
+                        decoration: InputDecoration(
+                          hintText: 'Ürün, üretici kodu, OEM, marka, RAF ara...',
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: _aramaController.text.isEmpty ? null : IconButton(onPressed: _aramaController.clear, icon: const Icon(Icons.clear_rounded)),
+                          border: const OutlineInputBorder(),
+                        ),
+                      )),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _aramaController,
-                    decoration: InputDecoration(
-                      hintText: 'Ürün, üretici kodu, OEM, marka, RAF ara...',
-                      prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: _aramaController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              onPressed: _aramaController.clear,
-                              icon: const Icon(Icons.clear_rounded),
-                            ),
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
           Expanded(
             child: _yukleniyor
                 ? const Center(child: CircularProgressIndicator())
                 : _gorunenStoklar.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Bu depoda sayılacak stok bulunamadı.',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      )
+                    ? const Center(child: Text('Bu depoda sayılacak stok bulunamadı.', style: TextStyle(fontSize: 18)))
                     : ListView.separated(
                         padding: const EdgeInsets.all(12),
                         itemCount: _gorunenStoklar.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 7),
                         itemBuilder: (_, index) {
                           final item = _gorunenStoklar[index];
-                          final stokId = int.tryParse(
-                                item['stok_id']?.toString() ?? '',
-                              ) ??
-                              0;
+                          final stokId = int.tryParse(item['stok_id']?.toString() ?? '') ?? 0;
                           final sistem = _sayi(item['miktar']);
                           final controller = _sayimController[stokId];
+
+                          if (mobil) {
+                            return Card(
+                              elevation: 0,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(_metin(item['urun_adi']), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                              const SizedBox(height: 4),
+                                              Text('ÜRETİCİ KODU: ${_metin(item['uretici_kodu'])}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                                              Text('RAF: ${_metin(item['raf'])}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                            decoration: BoxDecoration(color: Colors.blueGrey.withOpacity(.06), borderRadius: BorderRadius.circular(8)),
+                                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                              const Text('Sistem', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                              Text(_miktar(sistem), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                            ]),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: controller,
+                                            textAlign: TextAlign.right,
+                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                            decoration: const InputDecoration(labelText: 'Sayılan', border: OutlineInputBorder(), isDense: true),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
 
                           return Card(
                             elevation: 0,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              child: Row(
-                                children: [
-                                  const CircleAvatar(
-                                    child: Icon(Icons.inventory_2_outlined),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _metin(item['urun_adi']),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          'Kod: ${_metin(item['uretici_kodu'])} • '
-                                          'RAF: ${_metin(item['raf'])}',
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 110,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        const Text(
-                                          'Sistem',
-                                          style: TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                        Text(
-                                          _miktar(sistem),
-                                          style: const TextStyle(
-                                            fontSize: 19,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 18),
-                                  SizedBox(
-                                    width: 150,
-                                    child: TextField(
-                                      controller: controller,
-                                      textAlign: TextAlign.right,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                        decimal: true,
-                                      ),
-                                      decoration: const InputDecoration(
-                                        labelText: 'Sayılan',
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              child: Row(children: [
+                                const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
+                                const SizedBox(width: 12),
+                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(_metin(item['urun_adi']), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 3),
+                                  Text('Kod: ${_metin(item['uretici_kodu'])} • RAF: ${_metin(item['raf'])}'),
+                                ])),
+                                SizedBox(width: 110, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                                  const Text('Sistem', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                  Text(_miktar(sistem), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                                ])),
+                                const SizedBox(width: 18),
+                                SizedBox(width: 150, child: TextField(
+                                  controller: controller,
+                                  textAlign: TextAlign.right,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  decoration: const InputDecoration(labelText: 'Sayılan', border: OutlineInputBorder(), isDense: true),
+                                )),
+                              ]),
                             ),
                           );
                         },

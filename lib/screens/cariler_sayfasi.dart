@@ -959,6 +959,63 @@ class _CarilerSayfasiState extends State<CarilerSayfasi> {
     );
   }
 
+  Widget _mobilCariOzet({
+    required String baslik,
+    required String deger,
+    required IconData ikon,
+    required Color renk,
+  }) {
+    return Expanded(
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: renk.withOpacity(0.20)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 15,
+              backgroundColor: renk.withOpacity(0.12),
+              child: Icon(ikon, color: renk, size: 16),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    baslik,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.grey, fontSize: 9.5),
+                  ),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      deger,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: renk,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _cariKarti(Map<String, dynamic> cari) {
     final unvan = _metin(cari['unvan']);
     final bakiye = _sayi(cari['bakiye']);
@@ -1128,33 +1185,58 @@ class _CarilerSayfasiState extends State<CarilerSayfasi> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-            child: MobilYatayRow(
-              mobilDikey: true,
-              minWidth: 760,
-              children: [
-                _ozetKarti(
-                  baslik: 'Aktif Cari',
-                  deger: _aktifCariSayisi.toString(),
-                  ikon: Icons.people,
-                  renk: Colors.blue,
-                ),
-                const SizedBox(width: 8),
-                _ozetKarti(
-                  baslik: 'ALACAKLIYIZ',
-                  deger: _para(_toplamCariAlacagimiz),
-                  ikon: Icons.trending_up,
-                  renk: Colors.green,
-                ),
-                const SizedBox(width: 8),
-                _ozetKarti(
-                  baslik: 'BORÇLUYUZ',
-                  deger: _para(_toplamCariBorcumuz),
-                  ikon: Icons.trending_down,
-                  renk: Colors.red,
-                ),
-              ],
-            ),
+            padding: EdgeInsets.fromLTRB(mobil ? 8 : 12, mobil ? 6 : 10, mobil ? 8 : 12, 4),
+            child: mobil
+                ? Row(
+                    children: [
+                      _mobilCariOzet(
+                        baslik: 'Aktif',
+                        deger: _aktifCariSayisi.toString(),
+                        ikon: Icons.people,
+                        renk: Colors.blue,
+                      ),
+                      const SizedBox(width: 5),
+                      _mobilCariOzet(
+                        baslik: 'Alacaklıyız',
+                        deger: _para(_toplamCariAlacagimiz),
+                        ikon: Icons.trending_up,
+                        renk: Colors.green,
+                      ),
+                      const SizedBox(width: 5),
+                      _mobilCariOzet(
+                        baslik: 'Borçluyuz',
+                        deger: _para(_toplamCariBorcumuz),
+                        ikon: Icons.trending_down,
+                        renk: Colors.red,
+                      ),
+                    ],
+                  )
+                : MobilYatayRow(
+                    mobilDikey: true,
+                    minWidth: 760,
+                    children: [
+                      _ozetKarti(
+                        baslik: 'Aktif Cari',
+                        deger: _aktifCariSayisi.toString(),
+                        ikon: Icons.people,
+                        renk: Colors.blue,
+                      ),
+                      const SizedBox(width: 8),
+                      _ozetKarti(
+                        baslik: 'ALACAKLIYIZ',
+                        deger: _para(_toplamCariAlacagimiz),
+                        ikon: Icons.trending_up,
+                        renk: Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      _ozetKarti(
+                        baslik: 'BORÇLUYUZ',
+                        deger: _para(_toplamCariBorcumuz),
+                        ikon: Icons.trending_down,
+                        renk: Colors.red,
+                      ),
+                    ],
+                  ),
           ),
           Container(
             color: Colors.white,

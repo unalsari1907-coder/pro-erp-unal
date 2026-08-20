@@ -233,25 +233,16 @@ class _KasaGunSonuSayfasiState extends State<KasaGunSonuSayfasi> {
 
   @override
   Widget build(BuildContext context) {
+    final mobil = MobilUyum.telefon(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('KASA GÜN SONU / MUTABAKAT'),
+        title: Text(mobil ? 'KASA GÜN SONU' : 'KASA GÜN SONU / MUTABAKAT'),
         actions: [
-          MobilAppBarActions(
-            children: [
-          TextButton.icon(
-            onPressed: _tarihSec,
-            icon: const Icon(Icons.calendar_month_rounded),
-            label: Text(_tarihAnahtari),
-          ),
-          IconButton(
-            tooltip: 'Yenile',
-            onPressed: _yukle,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        
-            ],
-          ),
+          MobilAppBarActions(children: [
+            TextButton.icon(onPressed: _tarihSec, icon: const Icon(Icons.calendar_month_rounded), label: Text(_tarihAnahtari)),
+            IconButton(tooltip: 'Yenile', onPressed: _yukle, icon: const Icon(Icons.refresh_rounded)),
+          ]),
         ],
       ),
       body: _yukleniyor
@@ -264,59 +255,49 @@ class _KasaGunSonuSayfasiState extends State<KasaGunSonuSayfasi> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final kasa = _kasalar[index];
-                    final id = int.tryParse(
-                          kasa['kasa_id']?.toString() ?? '',
-                        ) ??
-                        0;
+                    final id = int.tryParse(kasa['kasa_id']?.toString() ?? '') ?? 0;
                     final beklenen = _beklenen[id] ?? 0;
                     final kayit = _kayitlar[id];
                     final fark = _sayi(kayit?['fark']);
-                    final renk = kayit == null
-                        ? Colors.orange
-                        : fark.abs() < 0.01
-                            ? Colors.green
-                            : Colors.red;
+                    final renk = kayit == null ? Colors.orange : fark.abs() < 0.01 ? Colors.green : Colors.red;
+                    final ikon = kayit == null ? Icons.pending_actions_rounded : fark.abs() < 0.01 ? Icons.verified_rounded : Icons.warning_amber_rounded;
+
+                    if (mobil) {
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                CircleAvatar(backgroundColor: renk.withOpacity(.12), child: Icon(ikon, color: renk)),
+                                const SizedBox(width: 10),
+                                Expanded(child: Text(kasa['kasa_adi']?.toString() ?? '-', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15))),
+                              ]),
+                              const SizedBox(height: 8),
+                              Text(kayit == null ? 'Gün sonu yapılmadı' : 'Sayılan: ${_para(kayit['sayilan_bakiye'])} • Fark: ${_para(fark)} • ${kayit['kullanici'] ?? '-'}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 10),
+                              Row(children: [
+                                Expanded(child: Text('Sistem: ${_para(beklenen)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                const SizedBox(width: 8),
+                                OutlinedButton.icon(onPressed: () => _sayimKaydet(kasa), icon: const Icon(Icons.fact_check_rounded), label: Text(kayit == null ? 'Sayım Yap' : 'Düzelt')),
+                              ]),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
 
                     return Card(
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: renk.withOpacity(0.12),
-                          child: Icon(
-                            kayit == null
-                                ? Icons.pending_actions_rounded
-                                : fark.abs() < 0.01
-                                    ? Icons.verified_rounded
-                                    : Icons.warning_amber_rounded,
-                            color: renk,
-                          ),
-                        ),
-                        title: Text(
-                          kasa['kasa_adi']?.toString() ?? '-',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          kayit == null
-                              ? 'Gün sonu yapılmadı'
-                              : 'Sayılan: ${_para(kayit['sayilan_bakiye'])} • '
-                                  'Fark: ${_para(fark)} • '
-                                  '${kayit['kullanici'] ?? '-'}',
-                        ),
-                        trailing: MobilYatayRow(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Sistem: ${_para(beklenen)}',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 12),
-                            OutlinedButton.icon(
-                              onPressed: () => _sayimKaydet(kasa),
-                              icon: const Icon(Icons.fact_check_rounded),
-                              label: Text(kayit == null ? 'Sayım Yap' : 'Düzelt'),
-                            ),
-                          ],
-                        ),
+                        leading: CircleAvatar(backgroundColor: renk.withOpacity(.12), child: Icon(ikon, color: renk)),
+                        title: Text(kasa['kasa_adi']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(kayit == null ? 'Gün sonu yapılmadı' : 'Sayılan: ${_para(kayit['sayilan_bakiye'])} • Fark: ${_para(fark)} • ${kayit['kullanici'] ?? '-'}'),
+                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text('Sistem: ${_para(beklenen)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 12),
+                          OutlinedButton.icon(onPressed: () => _sayimKaydet(kasa), icon: const Icon(Icons.fact_check_rounded), label: Text(kayit == null ? 'Sayım Yap' : 'Düzelt')),
+                        ]),
                       ),
                     );
                   },
