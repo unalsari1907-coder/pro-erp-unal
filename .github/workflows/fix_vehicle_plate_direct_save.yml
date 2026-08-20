@@ -1,0 +1,95 @@
+name: Fix vehicle plate direct save
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix_vehicle_plate_direct_save.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply direct verified plate save
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          p = Path('lib/screens/arac_parca_katalog_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+
+          old = """      final guncel = await AracKatalogService.aracGuncelle(
+        aracId: _int(arac['arac_id']),
+        uretici: uretici.text,
+        model: model.text,
+        yil: int.tryParse(yil.text.trim()),
+        yillar: yillar.text,
+        motor: motor.text,
+        yakit: yakit.text,
+        motorKodu: motorKodu.text,
+        sase: sase.text,
+        plaka: plaka.text,
+        notlar: notlar.text,
+        aracSahibi: sahip.text,
+      );"""
+
+          new = """      final girilenPlaka = plaka.text.trim().toUpperCase();
+      final guncel = await AracKatalogService.aracGuncelle(
+        aracId: _int(arac['arac_id']),
+        uretici: uretici.text,
+        model: model.text,
+        yil: int.tryParse(yil.text.trim()),
+        yillar: yillar.text,
+        motor: motor.text,
+        yakit: yakit.text,
+        motorKodu: motorKodu.text,
+        sase: sase.text,
+        plaka: girilenPlaka,
+        notlar: notlar.text,
+        aracSahibi: sahip.text,
+      );
+
+      // Plaka alanı kritik: kayıt sonrası DB'den tekrar doğrula.
+      // Böylece eski cache / stale response yüzünden ekranda '-' kalmaz.
+      final dogrulama = await SupabaseService.supabase
+          .from('erp_arac_katalog_araclar')
+          .select()
+          .eq('arac_id', _int(arac['arac_id']))
+          .single();
+      final dogrulanmis = Map<String, dynamic>.from(dogrulama);
+      if (girilenPlaka.isNotEmpty &&
+          '${dogrulanmis['plaka'] ?? ''}'.trim().toUpperCase() != girilenPlaka) {
+        await SupabaseService.supabase
+            .from('erp_arac_katalog_araclar')
+            .update({'plaka': girilenPlaka})
+            .eq('arac_id', _int(arac['arac_id']));
+        dogrulanmis['plaka'] = girilenPlaka;
+      }
+      guncel
+        ..clear()
+        ..addAll(dogrulanmis);"""
+
+          if new not in s:
+              if old not in s:
+                  raise SystemExit('Target edit save block not found')
+              s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/screens/arac_parca_katalog_sayfasi.dart
+          if git diff --cached --quiet; then
+            echo "Direct plate save already applied."
+            exit 0
+          fi
+          git commit -m "Make vehicle plate save direct and verified"
+          git push origin HEAD:main
