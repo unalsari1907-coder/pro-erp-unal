@@ -1,0 +1,238 @@
+name: Apply PRO ERP 2.5.31 finance and shortcuts
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply_finance_shortcuts_2531.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply finance and keyboard improvements
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def once(s, old, new, label):
+              if new in s:
+                  return s
+              if old not in s:
+                  raise SystemExit(f'Pattern not found: {label}')
+              return s.replace(old, new, 1)
+
+          # ---------------- KASA / BANKA ----------------
+          p = Path('lib/screens/kasa_banka_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+
+          s = once(
+              s,
+              "  final TextEditingController _aramaController = TextEditingController();\n\n  bool _yukleniyor = true;",
+              "  final TextEditingController _aramaController = TextEditingController();\n  final FocusNode _aramaFocusNode = FocusNode(debugLabel: 'kasaArama');\n\n  bool _yukleniyor = true;",
+              'kasa search focus node',
+          )
+          s = once(
+              s,
+              "    _aramaController.dispose();\n\n    super.dispose();",
+              "    _aramaController.dispose();\n    _aramaFocusNode.dispose();\n\n    super.dispose();",
+              'kasa dispose focus',
+          )
+          s = s.replace(
+              ".select('kasa_id, kasa_adi, kasa_tipi')",
+              ".select('kasa_id, kasa_adi, kasa_tipi, kk_limit')",
+          )
+
+          # Helpers for card limit tracking.
+          marker = "  double _kasaBakiyesi(int kasaId) {"
+          helper = r'''  bool _krediKartiMi(Map<String, dynamic> kasa) {
+    final ad = _metin(kasa['kasa_adi']).toUpperCase();
+    final tip = _metin(kasa['kasa_tipi']).toUpperCase();
+    return tip.contains('POS') || tip.contains('KART') ||
+        ad.contains('POS') || ad.contains('K.K') ||
+        ad.contains('KREDI') || ad.contains('KREDİ') || ad.contains('KART');
+  }
+
+  double _kkLimit(Map<String, dynamic> kasa) => _sayi(kasa['kk_limit']);
+
+  double _kkKullanilan(Map<String, dynamic> kasa) {
+    final id = int.tryParse(kasa['kasa_id']?.toString() ?? '') ?? 0;
+    final bakiye = _kasaBakiyesi(id);
+    return bakiye < 0 ? -bakiye : 0.0;
+  }
+
+  double _kkKalan(Map<String, dynamic> kasa) {
+    final kalan = _kkLimit(kasa) - _kkKullanilan(kasa);
+    return kalan < 0 ? 0 : kalan;
+  }
+
+  Future<void> _kkLimitDuzenle(Map<String, dynamic> kasa) async {
+    final kasaId = int.tryParse(kasa['kasa_id']?.toString() ?? '') ?? 0;
+    if (kasaId <= 0) return;
+    final controller = TextEditingController(
+      text: _kkLimit(kasa) == 0 ? '' : _kkLimit(kasa).toStringAsFixed(2),
+    );
+    final kaydet = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${_metin(kasa['kasa_adi'])} • K.K Limiti'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))],
+          decoration: const InputDecoration(
+            labelText: 'Kredi Kartı Limiti',
+            prefixIcon: Icon(Icons.credit_card_rounded),
+            suffixText: '₺',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Vazgeç')),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.save_rounded),
+            label: const Text('Kaydet'),
+          ),
+        ],
+      ),
+    );
+    if (kaydet != true) {
+      controller.dispose();
+      return;
+    }
+    final limit = double.tryParse(controller.text.trim().replaceAll(',', '.')) ?? 0;
+    controller.dispose();
+    if (limit < 0) {
+      _mesaj('Kredi kartı limiti negatif olamaz.', Colors.red);
+      return;
+    }
+    try {
+      await SupabaseService.supabase
+          .from('kasalar')
+          .update({'kk_limit': limit})
+          .eq('kasa_id', kasaId);
+      if (!mounted) return;
+      setState(() => kasa['kk_limit'] = limit);
+      _mesaj('Kredi kartı limiti güncellendi.', Colors.green);
+    } catch (e) {
+      if (mounted) _mesaj('K.K limiti kaydedilemedi: $e', Colors.red);
+    }
+  }
+
+'''
+          if helper not in s:
+              if marker not in s:
+                  raise SystemExit('kasa balance marker missing')
+              s = s.replace(marker, helper + marker, 1)
+
+          # Immediate optimistic movement insertion after RPC success.
+          old = """      if (!mounted) return;\n\n      _mesaj(\n        _islemTipi == 'TAHSILAT'"""
+          new = """      if (!mounted) return;\n\n      // F5 beklemeden hareketi anında ekrana yansıt. Ardından sunucudan\n      // sessiz doğrulama yapılır.\n      final yeniHareket = <String, dynamic>{\n        'hareket_id': 'yeni',\n        'tarih': _islemTarihi.toIso8601String(),\n        'kasa_id': kasaId,\n        'tip': _islemTipi == 'TAHSILAT' ? 'GIRIS' : 'CIKIS',\n        'tutar': tutar,\n        'aciklama': aciklama,\n        'cari_id': cariId,\n        'kullanici': YetkiService.aktifKullanici,\n        'belge_no': belgeNo,\n        'cari_unvan': _metin(cari['unvan']),\n        'kasa_adi': _metin(kasa['kasa_adi']),\n      };\n      setState(() {\n        _tumHareketler = <Map<String, dynamic>>[yeniHareket, ..._tumHareketler];\n      });\n      _hareketleriFiltrele();\n\n      _mesaj(\n        _islemTipi == 'TAHSILAT'"""
+          s = once(s, old, new, 'optimistic kasa movement')
+          s = once(
+              s,
+              "      await _ilkVerileriYukle();\n    } catch (e) {",
+              "      await Future<void>.delayed(const Duration(milliseconds: 250));\n      await _ilkVerileriYukle();\n    } catch (e) {",
+              'delayed server refresh',
+          )
+
+          # Card limit info and edit button.
+          old = """                          Expanded(\n                            child: Text(\n                              _metin(kasa['kasa_adi']),\n                              maxLines: 2,\n                              overflow: TextOverflow.ellipsis,\n                              style: const TextStyle(\n                                fontWeight: FontWeight.bold,\n                              ),\n                            ),\n                          ),\n                        ],\n                      ),\n                      const Spacer(),\n                      Text(\n                        _para(bakiye),"""
+          new = """                          Expanded(\n                            child: Text(\n                              _metin(kasa['kasa_adi']),\n                              maxLines: 2,\n                              overflow: TextOverflow.ellipsis,\n                              style: const TextStyle(fontWeight: FontWeight.bold),\n                            ),\n                          ),\n                          if (_krediKartiMi(kasa))\n                            IconButton(\n                              tooltip: 'K.K limitini düzenle',\n                              visualDensity: VisualDensity.compact,\n                              onPressed: () => _kkLimitDuzenle(kasa),\n                              icon: const Icon(Icons.edit_rounded, size: 18),\n                            ),\n                        ],\n                      ),\n                      const Spacer(),\n                      if (_krediKartiMi(kasa) && _kkLimit(kasa) > 0) ...[\n                        Text(\n                          'Limit: ${_para(_kkLimit(kasa))}  •  Kalan: ${_para(_kkKalan(kasa))}',\n                          maxLines: 1,\n                          overflow: TextOverflow.ellipsis,\n                          style: TextStyle(\n                            fontSize: 11,\n                            fontWeight: FontWeight.w700,\n                            color: _kkKalan(kasa) > 0 ? Colors.green.shade700 : Colors.red.shade700,\n                          ),\n                        ),\n                        const SizedBox(height: 3),\n                      ],\n                      Text(\n                        _para(bakiye),"""
+          s = once(s, old, new, 'kasa card limit')
+
+          s = once(
+              s,
+              "                          controller: _aramaController,\n                          decoration: InputDecoration(",
+              "                          controller: _aramaController,\n                          focusNode: _aramaFocusNode,\n                          decoration: InputDecoration(",
+              'kasa search focus field',
+          )
+
+          # Wrap Kasa page with keyboard shortcuts: Ctrl+F search, Esc back/close.
+          build_marker = "  @override\n  Widget build(BuildContext context) {\n    return Scaffold("
+          build_new = """  @override\n  Widget build(BuildContext context) {\n    return CallbackShortcuts(\n      bindings: <ShortcutActivator, VoidCallback>{\n        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () {\n          _aramaFocusNode.requestFocus();\n        },\n        const SingleActivator(LogicalKeyboardKey.escape): () {\n          Navigator.of(context).maybePop();\n        },\n      },\n      child: Focus(\n        autofocus: true,\n        child: Scaffold("""
+          s = once(s, build_marker, build_new, 'kasa keyboard wrapper')
+          if s.rstrip().endswith("    );\n  }\n}"):
+              s = s.rstrip()[:-len("    );\n  }\n}")] + "        ),\n      ),\n    );\n  }\n}\n"
+          else:
+              raise SystemExit('kasa file ending not expected')
+          p.write_text(s, encoding='utf-8')
+
+          # ---------------- DASHBOARD GLOBAL SHORTCUTS ----------------
+          p = Path('lib/screens/dashboard_sayfasi.dart')
+          d = p.read_text(encoding='utf-8')
+          if "package:flutter/services.dart" not in d:
+              d = d.replace("import 'package:flutter/material.dart';", "import 'package:flutter/material.dart';\nimport 'package:flutter/services.dart';", 1)
+          d = once(
+              d,
+              "  final TextEditingController _menuAramaController = TextEditingController();\n  final ScrollController _menuScrollController = ScrollController();",
+              "  final TextEditingController _menuAramaController = TextEditingController();\n  final FocusNode _menuAramaFocusNode = FocusNode(debugLabel: 'erpMenuArama');\n  final ScrollController _menuScrollController = ScrollController();",
+              'dashboard search focus',
+          )
+          d = once(
+              d,
+              "    _menuAramaController.dispose();\n    _menuScrollController.dispose();",
+              "    _menuAramaController.dispose();\n    _menuAramaFocusNode.dispose();\n    _menuScrollController.dispose();",
+              'dashboard focus dispose',
+          )
+          # Add focusNode to the menu search field wherever the controller is used.
+          if "focusNode: _menuAramaFocusNode" not in d:
+              needle = "controller: _menuAramaController,"
+              if needle not in d:
+                  raise SystemExit('dashboard menu controller widget not found')
+              d = d.replace(needle, needle + "\n                focusNode: _menuAramaFocusNode,", 1)
+
+          # Wrap only Dashboard's final build Scaffold.
+          marker = "  @override\n  Widget build(BuildContext context) {"
+          pos = d.rfind(marker)
+          if pos < 0:
+              raise SystemExit('dashboard build not found')
+          tail = d[pos:]
+          if "return CallbackShortcuts(" not in tail:
+              tail = tail.replace(
+                  "    return Scaffold(",
+                  """    return CallbackShortcuts(\n      bindings: <ShortcutActivator, VoidCallback>{\n        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () {\n          _menuAramaFocusNode.requestFocus();\n        },\n        const SingleActivator(LogicalKeyboardKey.escape): () {\n          Navigator.of(context).maybePop();\n        },\n      },\n      child: Focus(autofocus: true, child: Scaffold(""",
+                  1,
+              )
+              # final build method is at file end
+              if tail.rstrip().endswith("    );\n  }\n}"):
+                  tail = tail.rstrip()[:-len("    );\n  }\n}")] + "      )),\n    );\n  }\n}\n"
+              else:
+                  raise SystemExit('dashboard file ending not expected')
+              d = d[:pos] + tail
+          p.write_text(d, encoding='utf-8')
+
+          # ---------------- SUPABASE MIGRATION ----------------
+          sql = Path('supabase/PRO_ERP_FINANS_KK_LIMIT_2_5_31.sql')
+          sql.write_text(r'''-- PRO ERP 2.5.31 - Kredi kartı limit takibi
+-- Supabase SQL Editor'da bir kez çalıştırın.
+
+alter table if exists public.kasalar
+  add column if not exists kk_limit numeric(14,2) not null default 0;
+
+comment on column public.kasalar.kk_limit is
+  'POS/Kredi kartı için tanımlı toplam limit. Kullanılabilir limit ERP tarafından kasa hareketlerinden hesaplanır.';
+
+notify pgrst, 'reload schema';
+''', encoding='utf-8')
+          PY
+
+          dart format lib/screens/kasa_banka_sayfasi.dart lib/screens/dashboard_sayfasi.dart || true
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/screens/kasa_banka_sayfasi.dart lib/screens/dashboard_sayfasi.dart supabase/PRO_ERP_FINANS_KK_LIMIT_2_5_31.sql
+          if git diff --cached --quiet; then
+            echo "Already applied."
+            exit 0
+          fi
+          git commit -m "Add card limits instant cash refresh and keyboard shortcuts"
+          git push origin HEAD:main
