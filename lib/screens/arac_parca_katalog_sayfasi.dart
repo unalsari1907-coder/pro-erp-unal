@@ -1839,7 +1839,10 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.symmetric(
+          horizontal: mobil ? 8 : 14,
+          vertical: mobil ? 8 : 14,
+        ),
         child: Column(
           children: <Widget>[
             TextField(
@@ -2157,7 +2160,9 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         .where(parcaEslesiyor)
         .toList();
 
-    final mobil = MediaQuery.sizeOf(context).width < 1000;
+    final ekranGenisligi = MediaQuery.sizeOf(context).width;
+    final mobil = ekranGenisligi < 1000;
+    final cokDarMobil = ekranGenisligi < 520;
     final kategoriSirasi = <String>[
       'Tümü',
       'Bakım',
@@ -2221,9 +2226,9 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
               return Card(
                 elevation: 0,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: mobil ? 10 : 16,
+                    vertical: mobil ? 10 : 12,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2392,12 +2397,18 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         Card(
           elevation: 0,
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.symmetric(
+              horizontal: mobil ? 14 : 14,
+              vertical: mobil ? 16 : 14,
+            ),
             child: Wrap(
-              spacing: 24,
-              runSpacing: 8,
+              spacing: mobil ? 16 : 24,
+              runSpacing: mobil ? 16 : 8,
               children: <Widget>[
-                _bilgi('Araç', '${_s(arac['uretici'])} ${_s(arac['model'])}'),
+                SizedBox(
+                  width: mobil ? (cokDarMobil ? 145 : 190) : 190,
+                  child: _bilgi('Araç', '${_s(arac['uretici'])} ${_s(arac['model'])}'),
+                ),
                 _bilgi(
                   'Model Yılı',
                   _s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-',
@@ -2419,7 +2430,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
                   _bilgi('Araç Sahibi', _s(arac['arac_sahibi'])),
                 if (_s(arac['notlar']).isNotEmpty)
                   SizedBox(
-                    width: mobil ? double.infinity : 520,
+                    width: mobil ? (cokDarMobil ? 160 : 260) : 520,
                     child: _bilgi('Not / Ek Bilgi', _s(arac['notlar'])),
                   ),
               ],
@@ -2456,7 +2467,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
               ? Column(
                   children: <Widget>[
                     SizedBox(
-                      height: 54,
+                      height: 58,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: kategoriSirasi
