@@ -1,0 +1,137 @@
+name: Belge sekme duzeltmesini KESIN uygula
+on:
+  push:
+    paths:
+      - '.github/workflows/apply_document_tabs_exact_2534.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact source patch
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          def add_import(text, imp):
+              if imp in text:
+                  return text
+              marker = "import 'package:flutter/material.dart';"
+              if marker not in text:
+                  raise SystemExit(f'Material import yok: {imp}')
+              return text.replace(marker, marker + '\n' + imp, 1)
+
+          # dashboard
+          p = Path('lib/screens/dashboard_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+          if "import '../services/erp_sekme_service.dart';" not in s:
+              s = s.replace("import '../services/doviz_kur_service.dart';", "import '../services/doviz_kur_service.dart';\nimport '../services/erp_sekme_service.dart';", 1)
+          for imp in [
+              "import 'satis_sayfasi.dart';",
+              "import 'yeni_satis_irsaliyesi_screen.dart';",
+              "import 'yeni_alis_irsaliyesi_screen.dart';",
+              "import 'yeni_siparis_screen.dart';",
+              "import 'yeni_alis_siparis_screen.dart';",
+              "import 'satin_alma/satin_alma_sayfasi.dart';",
+          ]:
+              if imp not in s:
+                  anchor = "import 'satis_irsaliyeleri_screen.dart';"
+                  if anchor not in s:
+                      raise SystemExit('dashboard import anchor yok')
+                  s = s.replace(anchor, anchor + '\n' + imp, 1)
+
+          if 'ErpSekmeService.bagla' not in s:
+              s, n = re.subn(
+                  r'(void initState\(\)\s*\{\s*super\.initState\(\);)',
+                  r"\1\n    ErpSekmeService.bagla((sayfaId) { _sayfaSec(sayfaId); });",
+                  s,
+                  count=1,
+              )
+              if n != 1:
+                  raise SystemExit('dashboard initState bulunamadi')
+
+          if "case 'yeni_satis_irsaliyesi':" not in s:
+              anchor = "      case 'satis_faturalari':\n        return const SatisFaturalariSayfasi();"
+              if anchor not in s:
+                  raise SystemExit('dashboard switch anchor yok')
+              block = """      case 'yeni_satis_faturasi':
+        return const SatisSayfasi();
+      case 'yeni_alis_faturasi':
+        return const SatinAlmaSayfasi();
+      case 'yeni_satis_siparisi':
+        return const YeniSiparisScreen(kayitSonrasiKapat: false);
+      case 'yeni_alis_siparisi':
+        return const YeniAlisSiparisScreen(kayitSonrasiKapat: false);
+      case 'yeni_satis_irsaliyesi':
+        return const YeniSatisIrsaliyesiScreen(kayitSonrasiKapat: false);
+      case 'yeni_alis_irsaliyesi':
+        return const YeniAlisIrsaliyesiScreen(kayitSonrasiKapat: false);
+
+"""
+              s = s.replace(anchor, block + anchor, 1)
+
+          if "'yeni_satis_irsaliyesi': 'Yeni Satış İrsaliyesi'" not in s:
+              anchor = "      'satis_faturalari': 'Satış Faturaları',"
+              if anchor not in s:
+                  raise SystemExit('dashboard title anchor yok')
+              block = """      'yeni_satis_faturasi': 'Yeni Satış Faturası',
+      'yeni_alis_faturasi': 'Yeni Alış Faturası',
+      'yeni_satis_siparisi': 'Yeni Satış Siparişi',
+      'yeni_alis_siparisi': 'Yeni Alış Siparişi',
+      'yeni_satis_irsaliyesi': 'Yeni Satış İrsaliyesi',
+      'yeni_alis_irsaliyesi': 'Yeni Alış İrsaliyesi',
+"""
+              s = s.replace(anchor, block + anchor, 1)
+          p.write_text(s, encoding='utf-8')
+
+          # list screens: prepend tab dispatch to existing new-record methods
+          specs = [
+              ('lib/screens/satis_irsaliyeleri_screen.dart', '_yeniIrsaliyeAc', 'yeni_satis_irsaliyesi'),
+              ('lib/screens/alis_irsaliyeleri_screen.dart', '_yeniIrsaliyeAc', 'yeni_alis_irsaliyesi'),
+              ('lib/screens/siparisler_screen.dart', '_yeniKayitAc', 'yeni_satis_siparisi'),
+              ('lib/screens/alis_siparisleri_screen.dart', '_yeniKayitAc', 'yeni_alis_siparisi'),
+              ('lib/screens/satis_faturalari_sayfasi.dart', '_yeniKayitAc', 'yeni_satis_faturasi'),
+              ('lib/screens/alis_faturalari_sayfasi.dart', '_yeniKayitAc', 'yeni_alis_faturasi'),
+          ]
+          for fn, method, page in specs:
+              q = Path(fn)
+              x = q.read_text(encoding='utf-8')
+              x = add_import(x, "import '../services/erp_sekme_service.dart';")
+              needle = f"ErpSekmeService.ac('{page}')"
+              if needle not in x:
+                  pattern = rf'(Future<void>\s+{re.escape(method)}\(\)\s+async\s*\{{)'
+                  repl = rf"\1\n    if (ErpSekmeService.hazir) {{\n      ErpSekmeService.ac('{page}');\n      return;\n    }}"
+                  x, n = re.subn(pattern, repl, x, count=1)
+                  if n != 1:
+                      raise SystemExit(f'{fn}: {method} bulunamadi')
+              q.write_text(x, encoding='utf-8')
+
+          # hard verification
+          required = {
+              'lib/screens/dashboard_sayfasi.dart': ['ErpSekmeService.bagla', "case 'yeni_satis_irsaliyesi':", "case 'yeni_alis_faturasi':"],
+              'lib/screens/satis_irsaliyeleri_screen.dart': ["ErpSekmeService.ac('yeni_satis_irsaliyesi')"],
+              'lib/screens/alis_irsaliyeleri_screen.dart': ["ErpSekmeService.ac('yeni_alis_irsaliyesi')"],
+              'lib/screens/siparisler_screen.dart': ["ErpSekmeService.ac('yeni_satis_siparisi')"],
+              'lib/screens/alis_siparisleri_screen.dart': ["ErpSekmeService.ac('yeni_alis_siparisi')"],
+              'lib/screens/satis_faturalari_sayfasi.dart': ["ErpSekmeService.ac('yeni_satis_faturasi')"],
+              'lib/screens/alis_faturalari_sayfasi.dart': ["ErpSekmeService.ac('yeni_alis_faturasi')"],
+          }
+          for fn, needles in required.items():
+              t = Path(fn).read_text(encoding='utf-8')
+              for needle in needles:
+                  if needle not in t:
+                      raise SystemExit(f'VERIFY FAIL {fn}: {needle}')
+              print('OK', fn)
+
+      - name: Commit patched Dart files
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add lib/screens lib/services/erp_sekme_service.dart
+          git diff --cached --quiet && { echo 'No source changes'; exit 1; }
+          git commit -m "Alis satis belge ekranlarini ERP sekmelerine kesin bagla"
+          git push origin HEAD:main
