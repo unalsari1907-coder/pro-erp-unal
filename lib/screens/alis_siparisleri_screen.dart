@@ -7,6 +7,8 @@ import '../widgets/mobil_uyum.dart';
 import '../services/supabase_service.dart';
 import '../services/yetki_service.dart';
 import '../services/kurumsal_yazdirma_service.dart';
+import '../services/calisma_sekmesi_service.dart';
+import '../utils/marka_kod.dart';
 import 'yeni_alis_siparis_screen.dart';
 
 class AlisSiparisleriScreen extends StatefulWidget {
@@ -48,6 +50,13 @@ class _AlisSiparisleriScreenState
   }
 
   Future<void> _yeniKayitAc() async {
+    final sekmedeAcildi = CalismaSekmesiService.ac(
+      'yeni_alis_siparisi',
+      'Yeni Alış Siparişi',
+      const YeniAlisSiparisScreen(),
+    );
+    if (sekmedeAcildi) return;
+
     final sonuc = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => const YeniAlisSiparisScreen(
@@ -334,7 +343,7 @@ class _AlisSiparisleriScreenState
           await SupabaseService.supabase
               .from('stoklar')
               .select(
-                'stok_id, urun_adi, uretici_kodu, oem_no, raf, stok_miktari, alis_fiyati',
+                'stok_id, urun_adi, uretici_kodu, oem_no, marka, raf, stok_miktari, alis_fiyati',
               )
               .inFilter(
                 'stok_id',
@@ -374,6 +383,9 @@ class _AlisSiparisleriScreenState
 
       detay['oem_no'] =
           stok?['oem_no']?.toString() ?? '-';
+
+      detay['marka'] =
+          stok?['marka']?.toString() ?? '-';
 
       detay['raf'] =
           stok?['raf']?.toString() ?? '-';
@@ -641,7 +653,7 @@ class _AlisSiparisleriScreenState
                                                   Expanded(
                                                     flex: 2,
                                                     child: Text(
-                                                      'Kod',
+                                                      'Marka / Kod',
                                                       style:
                                                           TextStyle(
                                                         fontWeight:
@@ -780,9 +792,9 @@ class _AlisSiparisleriScreenState
                                                         Expanded(
                                                           flex: 2,
                                                           child: Text(
-                                                            _metin(
-                                                              detay[
-                                                                  'uretici_kodu'],
+                                                            markaVeUreticiKodu(
+                                                              detay['marka'],
+                                                              detay['uretici_kodu'],
                                                             ),
                                                           ),
                                                         ),
@@ -1548,7 +1560,7 @@ class _AlisSiparisleriScreenState
                               ),
                             ),
                             subtitle: Text(
-                              'ÜRETİCİ KODU: ${_metin(detay['uretici_kodu'])} • '
+                              '${markaVeUreticiKodu(detay['marka'], detay['uretici_kodu'])} • '
                               'RAF: ${_metin(detay['raf'])}\n'
                               'Sipariş: ${_sayi(detay['miktar']).toStringAsFixed(0)} • '
                               'Kabul Edilen: ${_sayi(detay['kabul_edilen_miktar']).toStringAsFixed(0)} • '

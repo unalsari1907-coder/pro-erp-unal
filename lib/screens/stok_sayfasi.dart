@@ -71,6 +71,7 @@ class _StokSayfasiState extends State<StokSayfasi>
   //------------------------------------------------------
 
   final ImagePicker picker = ImagePicker();
+  final resimLinkController = TextEditingController();
 
   XFile? secilenResim;
 
@@ -181,6 +182,7 @@ class _StokSayfasiState extends State<StokSayfasi>
     minStokController.dispose();
 
     aciklamaController.dispose();
+    resimLinkController.dispose();
 
     super.dispose();
   }
@@ -391,6 +393,7 @@ class _StokSayfasiState extends State<StokSayfasi>
     seciliStok = null;
     secilenResim = null;
     resimUrl = null;
+    resimLinkController.clear();
     duzenlemeModu = false;
 
     setState(() {});
@@ -425,6 +428,7 @@ class _StokSayfasiState extends State<StokSayfasi>
     aciklamaController.text = stok.urunOzellik;
 
     resimUrl = stok.resim;
+    resimLinkController.text = stok.resim ?? '';
 
     setState(() {});
   }
@@ -606,6 +610,7 @@ class _StokSayfasiState extends State<StokSayfasi>
     aciklamaController.text = stok.urunOzellik;
 
     resimUrl = stok.resim;
+    resimLinkController.text = stok.resim ?? '';
     secilenResim = null;
   }
 
@@ -704,6 +709,25 @@ class _StokSayfasiState extends State<StokSayfasi>
         .getPublicUrl(dosyaAdi);
   }
 
+  String? _hariciResimLinkiniDogrula(String deger) {
+    final link = deger.trim();
+    if (link.isEmpty) return null;
+
+    final uri = Uri.tryParse(link);
+    final guvenliSemayaSahip =
+        uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+
+    if (!guvenliSemayaSahip) {
+      throw const FormatException(
+        'Resim bağlantısı http:// veya https:// ile başlamalıdır.',
+      );
+    }
+
+    return link;
+  }
+
   void _yeniUrunDialog() {
     _formTemizle();
 
@@ -750,6 +774,8 @@ class _StokSayfasiState extends State<StokSayfasi>
 
       setStateDialog(() {
         secilenResim = image;
+        resimUrl = null;
+        resimLinkController.clear();
       });
     }
 
@@ -918,6 +944,30 @@ class _StokSayfasiState extends State<StokSayfasi>
                                           setStateDialog,
                                         );
                                       },
+                                    ),
+                                    const SizedBox(height: 10),
+                                    SizedBox(
+                                      width: 220,
+                                      child: TextField(
+                                        controller: resimLinkController,
+                                        keyboardType: TextInputType.url,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Harici Resim Bağlantısı',
+                                          hintText: 'https://...',
+                                          prefixIcon: Icon(Icons.link),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (value) {
+                                          setStateDialog(() {
+                                            final link = value.trim();
+                                            resimUrl =
+                                                link.isEmpty ? null : link;
+                                            if (link.isNotEmpty) {
+                                              secilenResim = null;
+                                            }
+                                          });
+                                        },
+                                      ),
                                     ),
                                     const SizedBox(height: 8),
                                     ElevatedButton.icon(
@@ -1401,11 +1451,16 @@ class _StokSayfasiState extends State<StokSayfasi>
                                 String? yeniResimUrl;
 
                                 try {
-                                  yeniResimUrl =
-                                      await _stokResmiYukle(
-                                    secilenResim,
-                                    mevcutUrl: resimUrl,
+                                  final hariciResim =
+                                      _hariciResimLinkiniDogrula(
+                                    resimLinkController.text,
                                   );
+
+                                  yeniResimUrl = hariciResim ??
+                                      await _stokResmiYukle(
+                                        secilenResim,
+                                        mevcutUrl: resimUrl,
+                                      );
                                 } catch (e) {
                                   if (!mounted) return;
 
@@ -1610,6 +1665,9 @@ class _StokSayfasiState extends State<StokSayfasi>
 
     XFile? yeniResim;
     String? mevcutResimUrl = stok.resim;
+    final resimLinkCtrl = TextEditingController(
+      text: stok.resim ?? '',
+    );
 
     final hamBirim =
         hamStok['birim']?.toString().trim() ?? '';
@@ -1661,6 +1719,8 @@ class _StokSayfasiState extends State<StokSayfasi>
 
                 setDialogState(() {
                   yeniResim = image;
+                  mevcutResimUrl = null;
+                  resimLinkCtrl.clear();
                 });
               }
 
@@ -1808,6 +1868,32 @@ class _StokSayfasiState extends State<StokSayfasi>
                                           'Resim Seç / Değiştir',
                                         ),
                                       ),
+                                      const SizedBox(height: 10),
+                                      SizedBox(
+                                        width: 230,
+                                        child: TextField(
+                                          controller: resimLinkCtrl,
+                                          keyboardType: TextInputType.url,
+                                          decoration: const InputDecoration(
+                                            labelText:
+                                                'Harici Resim Bağlantısı',
+                                            hintText: 'https://...',
+                                            prefixIcon: Icon(Icons.link),
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          onChanged: (value) {
+                                            setDialogState(() {
+                                              final link = value.trim();
+                                              mevcutResimUrl = link.isEmpty
+                                                  ? null
+                                                  : link;
+                                              if (link.isNotEmpty) {
+                                                yeniResim = null;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
                                       if ((mevcutResimUrl != null &&
                                               mevcutResimUrl!
                                                   .trim()
@@ -1819,6 +1905,7 @@ class _StokSayfasiState extends State<StokSayfasi>
                                               yeniResim = null;
                                               mevcutResimUrl =
                                                   null;
+                                              resimLinkCtrl.clear();
                                             });
                                           },
                                           icon: const Icon(
@@ -2282,16 +2369,19 @@ class _StokSayfasiState extends State<StokSayfasi>
                             const SizedBox(width: 10),
                             ElevatedButton.icon(
                               onPressed: () async {
-                                String? kaydedilecekResim =
-                                    mevcutResimUrl;
+                                String? kaydedilecekResim;
 
                                 try {
-                                  kaydedilecekResim =
-                                      await _stokResmiYukle(
-                                    yeniResim,
-                                    mevcutUrl:
-                                        mevcutResimUrl,
+                                  final hariciResim =
+                                      _hariciResimLinkiniDogrula(
+                                    resimLinkCtrl.text,
                                   );
+
+                                  kaydedilecekResim = hariciResim ??
+                                      await _stokResmiYukle(
+                                        yeniResim,
+                                        mevcutUrl: mevcutResimUrl,
+                                      );
                                 } catch (e) {
                                   if (!mounted) return;
 
@@ -2432,6 +2522,7 @@ class _StokSayfasiState extends State<StokSayfasi>
       alisFiyatCtrl.dispose();
       perakendeCtrl.dispose();
       toptanCtrl.dispose();
+      resimLinkCtrl.dispose();
     }
 
     if (sonuc == null) return;

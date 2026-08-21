@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../widgets/mobil_uyum.dart';
 
 import '../services/supabase_service.dart';
+import '../utils/marka_kod.dart';
 
 import 'widgets/stok_belge_detay_dialog.dart';
 
@@ -412,7 +413,13 @@ class _StokHareketleriSayfasiState extends State<StokHareketleriSayfasi> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _detaySatiri('Ürün', _metin(hareket['urun_adi'])),
-                  _detaySatiri('Üretici Kodu', _metin(hareket['uretici_kodu'])),
+                  _detaySatiri(
+                    'Kod',
+                    markaVeUreticiKodu(
+                      hareket['marka'],
+                      hareket['uretici_kodu'],
+                    ),
+                  ),
                   _detaySatiri('RAF', _metin(hareket['raf'])),
                   _detaySatiri('İşlem Tipi', _metin(hareket['islem_tipi'])),
                   _detaySatiri('Hareket Tipi', _metin(hareket['hareket_tipi'])),
@@ -546,7 +553,10 @@ class _StokHareketleriSayfasiState extends State<StokHareketleriSayfasi> {
                             ),
                           ),
                           child: Text(
-                            'ÜRETİCİ KODU: ${_metin(hareket['uretici_kodu'])}',
+                            markaVeUreticiKodu(
+                              hareket['marka'],
+                              hareket['uretici_kodu'],
+                            ),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.blue.shade800,
@@ -693,7 +703,10 @@ class _StokHareketleriSayfasiState extends State<StokHareketleriSayfasi> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'ÜRETİCİ KODU: ${_metin(hareket['uretici_kodu'])}',
+                          markaVeUreticiKodu(
+                            hareket['marka'],
+                            hareket['uretici_kodu'],
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

@@ -10,6 +10,8 @@ import '../services/supabase_service.dart';
 import '../services/yetki_service.dart';
 import '../services/belge_pdf_service.dart';
 import '../services/firma_ayarlari_service.dart';
+import '../services/calisma_sekmesi_service.dart';
+import '../utils/marka_kod.dart';
 import 'yeni_satis_irsaliyesi_screen.dart';
 
 class SatisIrsaliyeleriScreen extends StatefulWidget {
@@ -133,6 +135,13 @@ class _SatisIrsaliyeleriScreenState extends State<SatisIrsaliyeleriScreen> {
   }
 
   Future<void> _yeniIrsaliyeAc() async {
+    final sekmedeAcildi = CalismaSekmesiService.ac(
+      'yeni_satis_irsaliyesi',
+      'Yeni Satış İrsaliyesi',
+      const YeniSatisIrsaliyesiScreen(),
+    );
+    if (sekmedeAcildi) return;
+
     final sonuc = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) =>
@@ -711,7 +720,7 @@ class _SatisIrsaliyeleriScreenState extends State<SatisIrsaliyeleriScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              'ÜRETİCİ KODU: ${_m(detay['uretici_kodu'])} • '
+                              '${markaVeUreticiKodu(detay['marka'], detay['uretici_kodu'])} • '
                               'RAF: ${_m(detay['raf'])}\n'
                               'Toplam: ${_miktar(detay['miktar'])} • '
                               'Faturalanan: ${_miktar(detay['faturalanan_miktar'])} • '
@@ -1091,7 +1100,10 @@ class _SatisIrsaliyeleriScreenState extends State<SatisIrsaliyeleriScreen> {
                         runSpacing: 4,
                         children: [
                           Text(
-                  'ÜRETİCİ KODU: ${_m(detay['uretici_kodu'])}',
+                  markaVeUreticiKodu(
+                    detay['marka'],
+                    detay['uretici_kodu'],
+                  ),
                   style: TextStyle(
                     color: Colors.blue.shade800,
                     fontWeight: FontWeight.w900,
@@ -1750,7 +1762,7 @@ class _SatisIrsaliyeleriScreenState extends State<SatisIrsaliyeleriScreen> {
                                     Expanded(
                                       flex: 2,
                                       child: Text(
-                                        'Kod',
+                                        'Marka / Kod',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -1829,7 +1841,10 @@ class _SatisIrsaliyeleriScreenState extends State<SatisIrsaliyeleriScreen> {
                                           Expanded(
                                             flex: 2,
                                             child: Text(
-                                              _m(detay['uretici_kodu']),
+                                              markaVeUreticiKodu(
+                                                detay['marka'],
+                                                detay['uretici_kodu'],
+                                              ),
                                             ),
                                           ),
                                           Expanded(

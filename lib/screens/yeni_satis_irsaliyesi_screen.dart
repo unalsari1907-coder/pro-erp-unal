@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/belge_stok_arama_karti.dart';
 import '../widgets/logo_klasik_belge_satiri.dart';
+import '../utils/marka_kod.dart';
 
 import '../models/stok_model.dart';
 import '../services/supabase_service.dart';
@@ -1005,7 +1006,7 @@ class _YeniSatisIrsaliyesiScreenState extends State<YeniSatisIrsaliyesiScreen> {
 
     return LogoKlasikBelgeSatiri(
       no: index + 1,
-      kod: stok.ureticiKodu,
+      kod: markaVeUreticiKodu(stok.marka, stok.ureticiKodu),
       aciklama: stok.urunAdi,
       miktar: miktar.toStringAsFixed(0),
       birim: 'Adet',
@@ -1017,6 +1018,7 @@ class _YeniSatisIrsaliyesiScreenState extends State<YeniSatisIrsaliyesiScreen> {
       stok: stok.stokMiktari.toStringAsFixed(0),
       ambar: depoAdi,
       onTap: () => _stokEkraniniAc(stok),
+      onQuantityEdit: () => _miktarGir(index),
       onEdit: () => _fiyatTipiSec(index),
       onDelete: () {
         setState(() => _sepet.removeAt(index));

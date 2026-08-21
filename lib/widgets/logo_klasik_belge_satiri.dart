@@ -11,7 +11,7 @@ class LogoKlasikBelgeBaslik extends StatelessWidget {
   static const double fiyatW = 130;
   static const double kdvW = 80;
   static const double toplamW = 130;
-  static const double aksiyonW = 80;
+  static const double aksiyonW = 118;
   static const double toplamGenislik =
       urunW + kodW + rafW + miktarW + fiyatW + kdvW + toplamW + aksiyonW;
 
@@ -45,7 +45,7 @@ class LogoKlasikBelgeBaslik extends StatelessWidget {
       child: Row(
         children: [
           _baslik('Ürün', urunW),
-          _baslik('Üretici Kodu', kodW),
+          _baslik('Marka / Kod', kodW),
           _baslik('RAF', rafW),
           _baslik('Miktar', miktarW, align: TextAlign.right),
           _baslik('Birim Fiyat', fiyatW, align: TextAlign.right),
@@ -72,6 +72,7 @@ class LogoKlasikBelgeSatiri extends StatelessWidget {
   final String stok;
   final String ambar;
   final VoidCallback? onTap;
+  final VoidCallback? onQuantityEdit;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -90,6 +91,7 @@ class LogoKlasikBelgeSatiri extends StatelessWidget {
     required this.stok,
     required this.ambar,
     this.onTap,
+    this.onQuantityEdit,
     this.onEdit,
     this.onDelete,
   });
@@ -172,9 +174,21 @@ class LogoKlasikBelgeSatiri extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    if (onQuantityEdit != null)
+                      IconButton(
+                        tooltip: 'Miktarı Düzenle',
+                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints(
+                          minWidth: 34,
+                          minHeight: 34,
+                        ),
+                        padding: EdgeInsets.zero,
+                        onPressed: onQuantityEdit,
+                        icon: const Icon(Icons.numbers_rounded, size: 18),
+                      ),
                     if (onEdit != null)
                       IconButton(
-                        tooltip: 'Düzenle',
+                        tooltip: 'Fiyatı Düzenle',
                         visualDensity: VisualDensity.compact,
                         constraints: const BoxConstraints(
                           minWidth: 34,

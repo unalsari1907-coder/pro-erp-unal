@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../widgets/belge_alt_toplam_cubugu.dart';
 import '../widgets/belge_stok_arama_karti.dart';
 import '../widgets/logo_klasik_belge_satiri.dart';
+import '../utils/marka_kod.dart';
 
 import '../models/stok_model.dart';
 import '../services/supabase_service.dart';
@@ -1716,7 +1717,7 @@ class _SatisSayfasiState extends State<SatisSayfasi> {
 
           return LogoKlasikBelgeSatiri(
             no: index + 1,
-            kod: stok.ureticiKodu,
+            kod: markaVeUreticiKodu(stok.marka, stok.ureticiKodu),
             aciklama: stok.urunAdi,
             miktar: miktar.toStringAsFixed(0),
             birim: 'Adet',
@@ -1817,53 +1818,26 @@ class _SatisSayfasiState extends State<SatisSayfasi> {
     return Column(
       children: [
         _kurumsalFaturaBasligi(),
-        Card(
-          margin: const EdgeInsets.fromLTRB(8, 4, 8, 2),
-          elevation: 0,
-          child: ExpansionTile(
-            initiallyExpanded: false,
-            tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-            childrenPadding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-            leading: const Icon(Icons.tune_rounded),
-            title: const Text(
-              'Belge Bilgileri',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            subtitle: const Text(
-              'Cari, depo, ödeme, kasa ve belge no',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 370),
-                child: SingleChildScrollView(child: _ustBilgiler()),
-              ),
-            ],
-          ),
-        ),
+        _ustBilgiler(),
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-          child: SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<int>(
-              segments: [
-                const ButtonSegment(
-                  value: 0,
-                  icon: Icon(Icons.search),
-                  label: Text('Ürün Ara'),
-                ),
-                ButtonSegment(
-                  value: 1,
-                  icon: const Icon(Icons.shopping_cart),
-                  label: Text('Sepet (${_sepet.length})'),
-                ),
-              ],
-              selected: {_aktifPanel},
-              onSelectionChanged: (secim) {
-                setState(() => _aktifPanel = secim.first);
-              },
-            ),
+          child: SegmentedButton<int>(
+            segments: [
+              const ButtonSegment(
+                value: 0,
+                icon: Icon(Icons.search),
+                label: Text('Ürün Ara'),
+              ),
+              ButtonSegment(
+                value: 1,
+                icon: const Icon(Icons.shopping_cart),
+                label: Text('Sepet (${_sepet.length})'),
+              ),
+            ],
+            selected: {_aktifPanel},
+            onSelectionChanged: (secim) {
+              setState(() => _aktifPanel = secim.first);
+            },
           ),
         ),
         Expanded(

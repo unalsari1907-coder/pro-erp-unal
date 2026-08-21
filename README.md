@@ -1,6 +1,11 @@
-# PRO-ERP 2.5.11
+# PRO-ERP 2.5.31
 
 ÜNAL YEDEK PARÇA için Flutter + Supabase tabanlı kurumsal yedek parça ERP.
+
+Bu paket; alış/satış irsaliyelerinde miktar düzenleme, araç kataloğunda OEM
+yükleme sırası, harici ürün görseli bağlantısı, marka/üretici kodu gösterimi,
+kasa-banka-POS hesap yönetimi ve kaydedilmemiş yeni belge sekmelerini içerir.
+Mevcut Supabase tablo yapısını değiştirmez.
 
 ## Çalıştırma
 

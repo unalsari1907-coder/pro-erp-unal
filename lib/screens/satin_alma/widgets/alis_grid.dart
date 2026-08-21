@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models/stok_model.dart';
 import '../../../widgets/logo_klasik_belge_satiri.dart';
+import '../../../utils/marka_kod.dart';
 
 class AlisGrid extends StatelessWidget {
   final List<Map<String, dynamic>> sepet;
@@ -262,7 +263,7 @@ class AlisGrid extends StatelessWidget {
 
         return LogoKlasikBelgeSatiri(
           no: index + 1,
-          kod: stok.ureticiKodu,
+          kod: markaVeUreticiKodu(stok.marka, stok.ureticiKodu),
           aciklama: stok.urunAdi,
           miktar: '$miktar',
           birim: 'Adet',
