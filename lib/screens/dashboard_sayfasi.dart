@@ -2,11 +2,11 @@
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/stok_model.dart';
 import '../services/supabase_service.dart';
 import '../services/doviz_kur_service.dart';
+import '../services/calisma_sekmesi_service.dart';
 
 import 'alis_faturalari_sayfasi.dart';
 import 'alis_irsaliyeleri_screen.dart';
@@ -59,13 +59,14 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
   static const double _darMenu = 76;
 
   final TextEditingController _menuAramaController = TextEditingController();
-  final FocusNode _menuAramaFocusNode = FocusNode(debugLabel: 'erpMenuArama');
   final ScrollController _menuScrollController = ScrollController();
 
   String _seciliSayfa = 'dashboard';
   String _menuArama = '';
 
   final List<String> _acikSayfalar = <String>['dashboard'];
+  final Map<String, Widget> _calismaSayfalari = <String, Widget>{};
+  final Map<String, String> _calismaBasliklari = <String, String>{};
 
   bool _menuDar = false;
   bool _mobilMod = false;
@@ -133,6 +134,8 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
       });
     });
 
+    CalismaSekmesiService.bagla(_calismaSekmesiAc);
+
     YetkiService.yukle(zorla: true).then((_) {
       if (mounted) setState(() {});
     });
@@ -145,8 +148,8 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
 
   @override
   void dispose() {
+    CalismaSekmesiService.ayir();
     _menuAramaController.dispose();
-    _menuAramaFocusNode.dispose();
     _menuScrollController.dispose();
     super.dispose();
   }
@@ -341,6 +344,9 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
   }
 
   Widget _sayfaGetir(String sayfaId) {
+    final calismaSayfasi = _calismaSayfalari[sayfaId];
+    if (calismaSayfasi != null) return calismaSayfasi;
+
     switch (sayfaId) {
       case 'stok_kartlari':
         return const StokSayfasi();
@@ -492,6 +498,23 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
     }
   }
 
+  bool _calismaSekmesiAc(String id, String baslik, Widget sayfa) {
+    if (!mounted) return false;
+
+    setState(() {
+      _calismaSayfalari.putIfAbsent(id, () => sayfa);
+      _calismaBasliklari[id] = baslik;
+
+      if (!_acikSayfalar.contains(id)) {
+        _acikSayfalar.add(id);
+      }
+
+      _seciliSayfa = id;
+    });
+
+    return true;
+  }
+
   Future<void> _sayfaSec(String sayfaId, {String? grupId}) async {
     final izin = await YetkiService.yetkiliMi(sayfaId);
 
@@ -528,7 +551,10 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
       if (_mobilMod && _acikSayfalar.length > 3) {
         while (_acikSayfalar.length > 3) {
           final silinecek = _acikSayfalar.firstWhere(
-            (id) => id != 'dashboard' && id != _seciliSayfa,
+            (id) =>
+                id != 'dashboard' &&
+                id != _seciliSayfa &&
+                !_calismaSayfalari.containsKey(id),
             orElse: () => '',
           );
           if (silinecek.isEmpty) break;
@@ -558,6 +584,9 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
   }
 
   String _sayfaBasligi(String sayfaId) {
+    final calismaBasligi = _calismaBasliklari[sayfaId];
+    if (calismaBasligi != null) return calismaBasligi;
+
     const basliklar = <String, String>{
       'dashboard': 'Dashboard',
       'stok_kartlari': 'Stok Kartları',
@@ -630,6 +659,8 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
     setState(() {
       final seciliSayfaKapaniyor = _seciliSayfa == sayfaId;
       _acikSayfalar.removeAt(kapananIndex);
+      _calismaSayfalari.remove(sayfaId);
+      _calismaBasliklari.remove(sayfaId);
 
       if (seciliSayfaKapaniyor) {
         var yeniIndex = kapananIndex - 1;
@@ -1212,7 +1243,6 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
       child: TextField(
         controller: _menuAramaController,
-                focusNode: _menuAramaFocusNode,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Menü ara...',
@@ -2164,12 +2194,7 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
 
   @override
   Widget build(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () { _menuAramaFocusNode.requestFocus(); },
-        const SingleActivator(LogicalKeyboardKey.escape): () { if (_seciliSayfa != 'dashboard') { setState(() => _seciliSayfa = 'dashboard'); } else { Navigator.of(context).maybePop(); } },
-      },
-      child: Focus(autofocus: true, child: LayoutBuilder(
+    return LayoutBuilder(
       builder: (context, constraints) {
         final mobil = constraints.maxWidth < 900;
         _mobilMod = mobil;
@@ -2221,7 +2246,6 @@ class _DashboardSayfasiState extends State<DashboardSayfasi> {
           ),
         );
       },
-      )),
     );
   }
 }

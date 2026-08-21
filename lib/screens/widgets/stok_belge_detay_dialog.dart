@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/supabase_service.dart';
 import '../../widgets/mobil_uyum.dart';
+import '../../utils/marka_kod.dart';
 
 class StokBelgeDetayDialog {
   static String _metin(dynamic value) {
@@ -60,7 +61,10 @@ class StokBelgeDetayDialog {
             ),
             const SizedBox(height: 6),
             Text(
-              'ÜRETİCİ KODU: ${_metin(detay['uretici_kodu'])}',
+              markaVeUreticiKodu(
+                detay['marka'],
+                detay['uretici_kodu'],
+              ),
               style: TextStyle(
                 color: Colors.blue.shade800,
                 fontWeight: FontWeight.w900,
@@ -741,7 +745,7 @@ class StokBelgeDetayDialog {
                                     dataRowMaxHeight: 76,
                                     columns: const [
                                       DataColumn(label: Text('Ürün')),
-                                      DataColumn(label: Text('Kod')),
+                                      DataColumn(label: Text('Marka / Kod')),
                                       DataColumn(label: Text('RAF')),
                                       DataColumn(
                                         numeric: true,
@@ -849,7 +853,12 @@ class StokBelgeDetayDialog {
                                             ),
                                           ),
                                           DataCell(
-                                            Text(_metin(detay['uretici_kodu'])),
+                                            Text(
+                                              markaVeUreticiKodu(
+                                                detay['marka'],
+                                                detay['uretici_kodu'],
+                                              ),
+                                            ),
                                           ),
                                           DataCell(Text(_metin(detay['raf']))),
                                           DataCell(

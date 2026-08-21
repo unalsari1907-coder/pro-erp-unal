@@ -1,0 +1,50 @@
+PRO-ERP 2.5.31 - 21.08.2026
+================================
+
+Bu sürüm mevcut PRO-ERP 2.5.30 kaynaklarının üzerine, veritabanı şeması
+değiştirilmeden hazırlanmıştır.
+
+YAPILAN DÜZELTMELER
+-------------------
+1. Yeni alış ve satış irsaliyelerinde ürün satırına ayrı bir "Miktarı Düzenle"
+   düğmesi eklendi. Miktar artık zorunlu olarak 1 kalmıyor.
+
+2. Araç kataloğunda araçlar ve OEM adet/durum bilgileri birlikte hazırlanıyor.
+   Araçların önce boş, OEM bilgisinin daha sonra görünmesi giderildi.
+
+3. Stok kartına http/https harici resim bağlantısı girme desteği eklendi.
+   Bağlantı girildiğinde resim ERP depolamasına yüklenmeden doğrudan bu adresten
+   açılır. Yerel dosya yükleme seçeneği de korunmuştur.
+
+4. Stok hareketlerinde marka, üretici kodunun önünde tek metin olarak gösterilir.
+   Gereksiz "Marka" ve "Üretici Kodu" etiketleri kaldırıldı.
+
+5. Alış/satış irsaliye, sipariş ve fatura detaylarında "Marka / Kod" alanında
+   marka ile üretici kodu birlikte gösterilir.
+
+6. Kasa / Banka / POS ekranına yeni hesap ekleme, hesap adını/türünü düzenleme
+   ve hareketi olmayan hesabı güvenli şekilde silme işlemleri eklendi. Hareketi
+   bulunan hesapların silinmesi veri bütünlüğü için engellenir.
+
+7. Yeni alış, satış, sipariş ve irsaliye formları Dashboard içinde bağımsız
+   çalışma sekmesi olarak açılır. Form kaydedilmeden başka sayfalara geçildiğinde
+   açık form ve girilen bilgiler korunur.
+
+KURULUM / ÇALIŞTIRMA
+--------------------
+PowerShell'i bu klasörde açın ve sırasıyla çalıştırın:
+
+  flutter clean
+  flutter pub get
+  flutter run -d chrome
+
+Web yayını hazırlamak için:
+
+  flutter build web --release --no-wasm-dry-run
+
+NOTLAR
+------
+- Bu sürüm için yeni SQL çalıştırılması gerekmez.
+- Harici ürün görseli bağlantısı http:// veya https:// ile başlamalıdır.
+- Canlı yayına göndermeden önce alış/satış irsaliyesi miktar düzenleme,
+  kasa hesabı ekleme/düzenleme ve telefon görünümü kısa bir testten geçirilmelidir.

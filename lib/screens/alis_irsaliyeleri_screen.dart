@@ -7,6 +7,8 @@ import '../widgets/mobil_uyum.dart';
 import '../services/supabase_service.dart';
 import '../services/yetki_service.dart';
 import '../services/belge_pdf_service.dart';
+import '../services/calisma_sekmesi_service.dart';
+import '../utils/marka_kod.dart';
 import 'yeni_alis_irsaliyesi_screen.dart';
 
 class AlisIrsaliyeleriScreen extends StatefulWidget {
@@ -129,6 +131,13 @@ class _AlisIrsaliyeleriScreenState extends State<AlisIrsaliyeleriScreen> {
   }
 
   Future<void> _yeniIrsaliyeAc() async {
+    final sekmedeAcildi = CalismaSekmesiService.ac(
+      'yeni_alis_irsaliyesi',
+      'Yeni Alış İrsaliyesi',
+      const YeniAlisIrsaliyesiScreen(),
+    );
+    if (sekmedeAcildi) return;
+
     final sonuc = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => const YeniAlisIrsaliyesiScreen(kayitSonrasiKapat: true),
@@ -692,7 +701,7 @@ class _AlisIrsaliyeleriScreenState extends State<AlisIrsaliyeleriScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              'ÜRETİCİ KODU: ${_m(detay['uretici_kodu'])} • '
+                              '${markaVeUreticiKodu(detay['marka'], detay['uretici_kodu'])} • '
                               'RAF: ${_m(detay['raf'])}\n'
                               'Toplam: ${_miktar(detay['miktar'])} • '
                               'Faturalanan: ${_miktar(detay['faturalanan_miktar'])} • '
@@ -995,7 +1004,10 @@ class _AlisIrsaliyeleriScreenState extends State<AlisIrsaliyeleriScreen> {
                         runSpacing: 4,
                         children: [
                           Text(
-                  'ÜRETİCİ KODU: ${_m(detay['uretici_kodu'])}',
+                  markaVeUreticiKodu(
+                    detay['marka'],
+                    detay['uretici_kodu'],
+                  ),
                   style: TextStyle(
                     color: Colors.blue.shade800,
                     fontWeight: FontWeight.w900,
@@ -1646,7 +1658,7 @@ class _AlisIrsaliyeleriScreenState extends State<AlisIrsaliyeleriScreen> {
                                     dataRowMaxHeight: 76,
                                     columns: const [
                                       DataColumn(label: Text('Ürün')),
-                                      DataColumn(label: Text('Kod')),
+                                      DataColumn(label: Text('Marka / Kod')),
                                       DataColumn(label: Text('RAF')),
                                       DataColumn(
                                         numeric: true,
@@ -1709,7 +1721,12 @@ class _AlisIrsaliyeleriScreenState extends State<AlisIrsaliyeleriScreen> {
                                             ),
                                           ),
                                           DataCell(
-                                            Text(_m(detay['uretici_kodu'])),
+                                            Text(
+                                              markaVeUreticiKodu(
+                                                detay['marka'],
+                                                detay['uretici_kodu'],
+                                              ),
+                                            ),
                                           ),
                                           DataCell(Text(_m(detay['raf']))),
                                           DataCell(

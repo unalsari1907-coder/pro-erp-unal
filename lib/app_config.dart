@@ -2,8 +2,8 @@ class AppConfig {
   AppConfig._();
 
   static const String appName = 'ÜNAL YEDEK PARÇA ERP';
-  static const String version = '2.5.20';
-  static const String build = '20260815-mobile-operations';
+  static const String version = '2.5.31';
+  static const String build = '20260821-release';
 
   // Üretimde --dart-define ile değiştirilebilir. Varsayılan değerler mevcut
   // çalışan Supabase projesini korur; service-role anahtarı uygulamada tutulmaz.

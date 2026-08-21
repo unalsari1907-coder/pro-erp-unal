@@ -7,6 +7,8 @@ import '../widgets/mobil_uyum.dart';
 import '../services/supabase_service.dart';
 import '../services/yetki_service.dart';
 import '../services/kurumsal_yazdirma_service.dart';
+import '../services/calisma_sekmesi_service.dart';
+import '../utils/marka_kod.dart';
 import 'yeni_siparis_screen.dart';
 
 class SiparislerScreen extends StatefulWidget {
@@ -47,6 +49,13 @@ class _SiparislerScreenState extends State<SiparislerScreen> {
   }
 
   Future<void> _yeniKayitAc() async {
+    final sekmedeAcildi = CalismaSekmesiService.ac(
+      'yeni_satis_siparisi',
+      'Yeni Satış Siparişi',
+      const YeniSiparisScreen(),
+    );
+    if (sekmedeAcildi) return;
+
     final sonuc = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => const YeniSiparisScreen(
@@ -290,7 +299,7 @@ class _SiparislerScreenState extends State<SiparislerScreen> {
       final stokResponse = await SupabaseService.supabase
           .from('stoklar')
           .select(
-            'stok_id, urun_adi, uretici_kodu, oem_no, raf, stok_miktari',
+            'stok_id, urun_adi, uretici_kodu, oem_no, marka, raf, stok_miktari',
           )
           .inFilter('stok_id', stokIds);
 
@@ -323,6 +332,9 @@ class _SiparislerScreenState extends State<SiparislerScreen> {
 
       detay['oem_no'] =
           stok?['oem_no']?.toString() ?? '-';
+
+      detay['marka'] =
+          stok?['marka']?.toString() ?? '-';
 
       detay['raf'] =
           stok?['raf']?.toString() ?? '-';
@@ -587,7 +599,7 @@ class _SiparislerScreenState extends State<SiparislerScreen> {
                                                   Expanded(
                                                     flex: 2,
                                                     child: Text(
-                                                      'Kod',
+                                                      'Marka / Kod',
                                                       style:
                                                           TextStyle(
                                                         fontWeight:
@@ -726,9 +738,9 @@ class _SiparislerScreenState extends State<SiparislerScreen> {
                                                         Expanded(
                                                           flex: 2,
                                                           child: Text(
-                                                            _metin(
-                                                              detay[
-                                                                  'uretici_kodu'],
+                                                            markaVeUreticiKodu(
+                                                              detay['marka'],
+                                                              detay['uretici_kodu'],
                                                             ),
                                                           ),
                                                         ),
@@ -1468,7 +1480,7 @@ class _SiparislerScreenState extends State<SiparislerScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              'ÜRETİCİ KODU: ${_metin(detay['uretici_kodu'])} • '
+                              '${markaVeUreticiKodu(detay['marka'], detay['uretici_kodu'])} • '
                               'RAF: ${_metin(detay['raf'])}\n'
                               'Sipariş: ${_sayi(detay['miktar']).toStringAsFixed(0)} • '
                               'Sevk Edilen: ${_sayi(detay['sevk_edilen_miktar']).toStringAsFixed(0)} • '

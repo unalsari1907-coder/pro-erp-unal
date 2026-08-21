@@ -7,6 +7,8 @@ import '../widgets/mobil_uyum.dart';
 import '../services/supabase_service.dart';
 import '../services/belge_pdf_service.dart';
 import '../services/yetki_service.dart';
+import '../services/calisma_sekmesi_service.dart';
+import '../utils/marka_kod.dart';
 import 'satin_alma/satin_alma_sayfasi.dart';
 import 'iadeler_sayfasi.dart';
 
@@ -39,6 +41,13 @@ class _AlisFaturalariSayfasiState extends State<AlisFaturalariSayfasi> {
   }
 
   Future<void> _yeniKayitAc() async {
+    final sekmedeAcildi = CalismaSekmesiService.ac(
+      'yeni_alis_faturasi',
+      'Yeni Alış',
+      const SatinAlmaSayfasi(),
+    );
+    if (sekmedeAcildi) return;
+
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(builder: (_) => const SatinAlmaSayfasi()),
     );
@@ -300,7 +309,7 @@ class _AlisFaturalariSayfasiState extends State<AlisFaturalariSayfasi> {
             .order('detay_id'),
         SupabaseService.supabase
             .from('stoklar')
-            .select('stok_id, urun_adi, uretici_kodu, raf'),
+            .select('stok_id, urun_adi, uretici_kodu, marka, raf'),
       ]);
 
       final detaylar = List<Map<String, dynamic>>.from(sonuclar[0] as List);
@@ -323,6 +332,7 @@ class _AlisFaturalariSayfasiState extends State<AlisFaturalariSayfasi> {
 
         detay['urun_adi'] = stok?['urun_adi'] ?? '-';
         detay['uretici_kodu'] = stok?['uretici_kodu'] ?? '-';
+        detay['marka'] = stok?['marka'] ?? '-';
         detay['raf'] = stok?['raf'] ?? '-';
       }
 
@@ -377,7 +387,7 @@ class _AlisFaturalariSayfasiState extends State<AlisFaturalariSayfasi> {
                                 child: DataTable(
                                   columns: const [
                                     DataColumn(label: Text('Ürün')),
-                                    DataColumn(label: Text('Kod')),
+                                    DataColumn(label: Text('Marka / Kod')),
                                     DataColumn(label: Text('RAF')),
                                     DataColumn(label: Text('Miktar')),
                                     DataColumn(label: Text('Birim Fiyat')),
@@ -395,7 +405,12 @@ class _AlisFaturalariSayfasiState extends State<AlisFaturalariSayfasi> {
                                           ),
                                         ),
                                         DataCell(
-                                          Text(_metin(detay['uretici_kodu'])),
+                                          Text(
+                                            markaVeUreticiKodu(
+                                              detay['marka'],
+                                              detay['uretici_kodu'],
+                                            ),
+                                          ),
                                         ),
                                         DataCell(Text(_metin(detay['raf']))),
                                         DataCell(Text(_metin(detay['miktar']))),
@@ -622,7 +637,7 @@ class _AlisFaturalariSayfasiState extends State<AlisFaturalariSayfasi> {
                                 child: DataTable(
                                   columns: const [
                                     DataColumn(label: Text('Ürün')),
-                                    DataColumn(label: Text('Kod')),
+                                    DataColumn(label: Text('Marka / Kod')),
                                     DataColumn(label: Text('RAF')),
                                     DataColumn(label: Text('Miktar')),
                                     DataColumn(label: Text('Birim Fiyat')),
@@ -643,7 +658,12 @@ class _AlisFaturalariSayfasiState extends State<AlisFaturalariSayfasi> {
                                           ),
                                         ),
                                         DataCell(
-                                          Text(_metin(detay['uretici_kodu'])),
+                                          Text(
+                                            markaVeUreticiKodu(
+                                              detay['marka'],
+                                              detay['uretici_kodu'],
+                                            ),
+                                          ),
                                         ),
                                         DataCell(Text(_metin(detay['raf']))),
                                         DataCell(Text(_metin(detay['miktar']))),

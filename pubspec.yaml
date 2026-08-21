@@ -2,7 +2,7 @@ name: pro_erp
 description: PRO ERP
 publish_to: "none"
 
-version: 2.5.20+2026081701
+version: 2.5.31+2026082101
 
 environment:
   sdk: ">=2.18.0 <4.0.0"

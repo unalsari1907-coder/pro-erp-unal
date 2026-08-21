@@ -72,59 +72,27 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
       final liste = await AracKatalogService.aracAra(_q.text);
       if (!mounted || nesil != _aramaNesli) return;
 
-      // Önce araç listesini göster; OEM doluluk sayacı kullanıcıyı bekletmesin.
+      final aracIdleri = liste
+          .map((arac) => _int(arac['arac_id']))
+          .where((id) => id > 0)
+          .toList();
+      final oemDurumlari = await AracKatalogService.aracOemDurumlari(
+        aracIdleri,
+      );
+
+      if (!mounted || nesil != _aramaNesli) return;
       setState(() {
         _araclar = liste;
-        _aracOemDurumlari = <int, String>{};
+        _aracOemDurumlari = <int, String>{
+          for (final id in aracIdleri)
+            id: '${oemDurumlari[id]?['tamam'] ?? 0}/'
+                '${oemDurumlari[id]?['toplam'] ?? 0}',
+        };
         _yukleniyor = false;
         if (liste.isEmpty) {
           _hata = 'Araç bulunamadı. Katalog Excel/CSV dosyanızı içe aktarabilirsiniz.';
         }
       });
-
-      if (liste.isNotEmpty) {
-        // Listeyi hemen göster; OEM durumlarını paralel ve arkadan doldur.
-        Future.wait(liste.map((arac) async {
-          final id = _int(arac['arac_id']);
-          if (id <= 0) return MapEntry(id, '0/0');
-          try {
-            final parcalar = await AracKatalogService.parcalariGetir(id);
-
-            // Araç detay ekranındaki TÜMÜ sayacı ile birebir aynı hesap.
-            final gruplar = <String, List<Map<String, dynamic>>>{};
-            for (final parca in parcalar) {
-              final hamKod = _s(parca['kategori_kodu']);
-              final kod = hamKod.isEmpty
-                  ? 'PARCA_${_int(parca['parca_id'])}'
-                  : _birlesikRlKategoriKodu(hamKod);
-              gruplar
-                  .putIfAbsent(kod, () => <Map<String, dynamic>>[])
-                  .add(parca);
-            }
-
-            final toplam = gruplar.length;
-            final dolu = gruplar.values
-                .where(
-                  (grup) => grup.any(
-                    (parca) => _s(parca['oem_kodu']).isNotEmpty,
-                  ),
-                )
-                .length;
-
-            return MapEntry(id, '$dolu/$toplam');
-          } catch (_) {
-            return MapEntry(id, '0/0');
-          }
-        })).then((entries) {
-          if (!mounted || nesil != _aramaNesli) return;
-          setState(() {
-            _aracOemDurumlari = <int, String>{
-              for (final e in entries) e.key: e.value,
-            };
-          });
-        });
-      }
-
     } catch (e) {
       if (!mounted || nesil != _aramaNesli) return;
       setState(() {
@@ -253,7 +221,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
     final yakit = TextEditingController();
     final motorKodu = TextEditingController();
     final sase = TextEditingController();
-    final plaka = TextEditingController();
     final notlar = TextEditingController();
     final sahip = TextEditingController();
     final kaydet = await showDialog<bool>(
@@ -354,18 +321,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
                   ),
                 ),
                 SizedBox(
-                  width: 200,
-                  child: TextField(
-                    controller: plaka,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: const InputDecoration(
-                      labelText: 'Plaka',
-                      hintText: '58 ABC 123',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                SizedBox(
                   width: 310,
                   child: TextField(
                     controller: sahip,
@@ -413,7 +368,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit,
         motorKodu,
         sase,
-        plaka,
         notlar,
         sahip,
       ])
@@ -431,7 +385,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit,
         motorKodu,
         sase,
-        plaka,
         notlar,
         sahip,
       ])
@@ -461,7 +414,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit: yakit.text,
         motorKodu: motorKodu.text,
         sase: sase.text,
-        plaka: plaka.text,
         notlar: notlar.text,
         aracSahibi: sahip.text,
       );
@@ -490,7 +442,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit,
         motorKodu,
         sase,
-        plaka,
         notlar,
         sahip,
       ])
@@ -510,7 +461,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
     final yakit = TextEditingController(text: _s(arac['yakit']));
     final motorKodu = TextEditingController(text: _s(arac['motor_kodu']));
     final sase = TextEditingController(text: _s(arac['sase']));
-    final plaka = TextEditingController(text: _s(arac['plaka']));
     final notlar = TextEditingController(text: _s(arac['notlar']));
     final sahip = TextEditingController(text: _s(arac['arac_sahibi']));
     final controllers = <TextEditingController>[
@@ -522,7 +472,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
       yakit,
       motorKodu,
       sase,
-      plaka,
       notlar,
       sahip,
     ];
@@ -638,18 +587,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
                     ),
                   ),
                   SizedBox(
-                    width: mobil ? genisAlan : 220,
-                    child: TextField(
-                      controller: plaka,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: const InputDecoration(
-                        labelText: 'Plaka',
-                        hintText: '58 ABC 123',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
                     width: mobil ? genisAlan : 360,
                     child: TextField(
                       controller: sahip,
@@ -717,7 +654,6 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         yakit: yakit.text,
         motorKodu: motorKodu.text,
         sase: sase.text,
-        plaka: plaka.text,
         notlar: notlar.text,
         aracSahibi: sahip.text,
       );
@@ -1839,10 +1775,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         ],
       ),
       body: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: mobil ? 8 : 14,
-          vertical: mobil ? 8 : 14,
-        ),
+        padding: const EdgeInsets.all(14),
         child: Column(
           children: <Widget>[
             TextField(
@@ -1852,7 +1785,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.directions_car_rounded),
-                hintText: 'Google tarzı ara: model, motor, şase veya plaka (58 ABC 123)...',
+                hintText: 'Google tarzı ara: 2005 DOBLO 1.3 DIZEL, AVF PASSAT 2005 veya şase...',
                 suffixIcon: _q.text.isEmpty
                     ? IconButton(
                         onPressed: _ara,
@@ -2041,7 +1974,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
               'Model Yılı: ${_s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-'} • '
               'Uyum Aralığı: ${_s(arac['yillar']).isNotEmpty ? _s(arac['yillar']) : (_s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-')} • '
               '${_s(arac['motor'])} ${_s(arac['yakit'])}\n'
-              'Motor: ${_s(arac['motor_kodu'])} • Plaka: ${_s(arac['plaka']).isEmpty ? '-' : _s(arac['plaka'])} • Şase: ${_s(arac['sase'])}',
+              'Motor: ${_s(arac['motor_kodu'])} • Şase: ${_s(arac['sase'])}',
             ),
             isThreeLine: true,
             trailing: Row(
@@ -2160,9 +2093,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         .where(parcaEslesiyor)
         .toList();
 
-    final ekranGenisligi = MediaQuery.sizeOf(context).width;
-    final mobil = ekranGenisligi < 1000;
-    final cokDarMobil = ekranGenisligi < 520;
+    final mobil = MediaQuery.sizeOf(context).width < 1000;
     final kategoriSirasi = <String>[
       'Tümü',
       'Bakım',
@@ -2226,9 +2157,9 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
               return Card(
                 elevation: 0,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: mobil ? 10 : 16,
-                    vertical: mobil ? 10 : 12,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2397,18 +2328,12 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
         Card(
           elevation: 0,
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: mobil ? 14 : 14,
-              vertical: mobil ? 16 : 14,
-            ),
+            padding: const EdgeInsets.all(14),
             child: Wrap(
-              spacing: mobil ? 16 : 24,
-              runSpacing: mobil ? 16 : 8,
+              spacing: 24,
+              runSpacing: 8,
               children: <Widget>[
-                SizedBox(
-                  width: mobil ? (cokDarMobil ? 145 : 190) : 190,
-                  child: _bilgi('Araç', '${_s(arac['uretici'])} ${_s(arac['model'])}'),
-                ),
+                _bilgi('Araç', '${_s(arac['uretici'])} ${_s(arac['model'])}'),
                 _bilgi(
                   'Model Yılı',
                   _s(arac['yil']).isNotEmpty ? _s(arac['yil']) : '-',
@@ -2424,13 +2349,12 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
                   '${_s(arac['motor'])} ${_s(arac['motor_kodu'])}',
                 ),
                 _bilgi('Yakıt', _s(arac['yakit'])),
-                _kopyalanabilirBilgi('Plaka', _s(arac['plaka']), 'Plaka'),
                 _kopyalanabilirBilgi('Şase', _s(arac['sase']), 'Şase'),
                 if (_s(arac['arac_sahibi']).isNotEmpty)
                   _bilgi('Araç Sahibi', _s(arac['arac_sahibi'])),
                 if (_s(arac['notlar']).isNotEmpty)
                   SizedBox(
-                    width: mobil ? (cokDarMobil ? 160 : 260) : 520,
+                    width: mobil ? double.infinity : 520,
                     child: _bilgi('Not / Ek Bilgi', _s(arac['notlar'])),
                   ),
               ],
@@ -2467,7 +2391,7 @@ class _AracParcaKatalogSayfasiState extends State<AracParcaKatalogSayfasi> {
               ? Column(
                   children: <Widget>[
                     SizedBox(
-                      height: 58,
+                      height: 54,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: kategoriSirasi
