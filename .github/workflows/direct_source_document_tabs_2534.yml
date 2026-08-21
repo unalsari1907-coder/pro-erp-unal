@@ -1,0 +1,192 @@
+name: Belge sekmelerini GERCEK kaynak dosyalarda guncelle
+
+on:
+  push:
+    paths:
+      - '.github/workflows/direct_source_document_tabs_2534.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gercek Dart dosyalarini guncelle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def one(text, old, new, name):
+              if old not in text:
+                  raise SystemExit(f'KALIP YOK: {name}')
+              return text.replace(old, new, 1)
+
+          # DASHBOARD
+          p = Path('lib/screens/dashboard_sayfasi.dart')
+          s = p.read_text(encoding='utf-8')
+
+          if "import '../services/erp_sekme_service.dart';" not in s:
+              s = one(s,
+                  "import '../services/doviz_kur_service.dart';",
+                  "import '../services/doviz_kur_service.dart';\nimport '../services/erp_sekme_service.dart';",
+                  'dashboard service import')
+
+          anchor = "import 'satis_irsaliyeleri_screen.dart';"
+          for imp in [
+              "import 'satis_sayfasi.dart';",
+              "import 'yeni_satis_irsaliyesi_screen.dart';",
+              "import 'yeni_alis_irsaliyesi_screen.dart';",
+              "import 'yeni_siparis_screen.dart';",
+              "import 'yeni_alis_siparis_screen.dart';",
+              "import 'satin_alma/satin_alma_sayfasi.dart';",
+          ]:
+              if imp not in s:
+                  s = one(s, anchor, anchor + '\n' + imp, imp)
+
+          if 'ErpSekmeService.bagla(_erpBelgeSekmesiAc);' not in s:
+              s = one(s,
+                  """  @override
+  void initState() {
+    super.initState();
+
+    _menuAramaController.addListener(() {""",
+                  """  @override
+  void initState() {
+    super.initState();
+
+    ErpSekmeService.bagla(_erpBelgeSekmesiAc);
+
+    _menuAramaController.addListener(() {""",
+                  'dashboard bind')
+
+          if 'void _erpBelgeSekmesiAc(String sayfaId)' not in s:
+              s = one(s,
+                  """  Future<void> _sayfaSec(String sayfaId, {String? grupId}) async {""",
+                  """  void _erpBelgeSekmesiAc(String sayfaId) {
+    if (!mounted) return;
+    setState(() {
+      if (!_acikSayfalar.contains(sayfaId)) {
+        _acikSayfalar.add(sayfaId);
+      }
+      _seciliSayfa = sayfaId;
+    });
+  }
+
+  Future<void> _sayfaSec(String sayfaId, {String? grupId}) async {""",
+                  'dashboard tab opener')
+
+          if "case 'yeni_satis_irsaliyesi':" not in s:
+              s = one(s,
+                  """      case 'satis_faturalari':
+        return const SatisFaturalariSayfasi();""",
+                  """      case 'yeni_satis_faturasi':
+        return const SatisSayfasi();
+
+      case 'yeni_alis_faturasi':
+        return const SatinAlmaSayfasi(kayitSonrasiKapat: false);
+
+      case 'yeni_satis_siparisi':
+        return const YeniSiparisScreen(kayitSonrasiKapat: false);
+
+      case 'yeni_alis_siparisi':
+        return const YeniAlisSiparisScreen(kayitSonrasiKapat: false);
+
+      case 'yeni_satis_irsaliyesi':
+        return const YeniSatisIrsaliyesiScreen(kayitSonrasiKapat: false);
+
+      case 'yeni_alis_irsaliyesi':
+        return const YeniAlisIrsaliyesiScreen(kayitSonrasiKapat: false);
+
+      case 'satis_faturalari':
+        return const SatisFaturalariSayfasi();""",
+                  'dashboard page cases')
+
+          if "'yeni_satis_irsaliyesi': 'Yeni Satış İrsaliyesi'" not in s:
+              s = one(s,
+                  "      'satis_faturalari': 'Satış Faturaları',",
+                  """      'yeni_satis_faturasi': 'Yeni Satış Faturası',
+      'yeni_alis_faturasi': 'Yeni Alış Faturası',
+      'yeni_satis_siparisi': 'Yeni Satış Siparişi',
+      'yeni_alis_siparisi': 'Yeni Alış Siparişi',
+      'yeni_satis_irsaliyesi': 'Yeni Satış İrsaliyesi',
+      'yeni_alis_irsaliyesi': 'Yeni Alış İrsaliyesi',
+      'satis_faturalari': 'Satış Faturaları',""",
+                  'dashboard titles')
+
+          p.write_text(s, encoding='utf-8')
+
+          # BELGE LISTELERI
+          specs = [
+              ('lib/screens/satis_irsaliyeleri_screen.dart', '_yeniIrsaliyeAc', 'yeni_satis_irsaliyesi'),
+              ('lib/screens/alis_irsaliyeleri_screen.dart', '_yeniIrsaliyeAc', 'yeni_alis_irsaliyesi'),
+              ('lib/screens/siparisler_screen.dart', '_yeniKayitAc', 'yeni_satis_siparisi'),
+              ('lib/screens/alis_siparisleri_screen.dart', '_yeniKayitAc', 'yeni_alis_siparisi'),
+              ('lib/screens/satis_faturalari_sayfasi.dart', '_yeniKayitAc', 'yeni_satis_faturasi'),
+              ('lib/screens/alis_faturalari_sayfasi.dart', '_yeniKayitAc', 'yeni_alis_faturasi'),
+          ]
+
+          for fn, method, page_id in specs:
+              q = Path(fn)
+              x = q.read_text(encoding='utf-8')
+              if "import '../services/erp_sekme_service.dart';" not in x:
+                  x = one(x,
+                      "import 'package:flutter/material.dart';",
+                      "import 'package:flutter/material.dart';\nimport '../services/erp_sekme_service.dart';",
+                      f'{fn} import')
+
+              call = f"ErpSekmeService.ac('{page_id}');"
+              if call not in x:
+                  marker = f"  Future<void> {method}() async {{\n"
+                  replacement = marker + f"    if (ErpSekmeService.hazir) {{\n      ErpSekmeService.ac('{page_id}');\n      return;\n    }}\n\n"
+                  x = one(x, marker, replacement, f'{fn} {method}')
+              q.write_text(x, encoding='utf-8')
+
+          # DOGRULAMA
+          checks = {
+              'lib/screens/dashboard_sayfasi.dart': [
+                  'ErpSekmeService.bagla(_erpBelgeSekmesiAc);',
+                  "case 'yeni_satis_faturasi':",
+                  "case 'yeni_alis_faturasi':",
+                  "case 'yeni_satis_siparisi':",
+                  "case 'yeni_alis_siparisi':",
+                  "case 'yeni_satis_irsaliyesi':",
+                  "case 'yeni_alis_irsaliyesi':",
+              ],
+              'lib/screens/satis_irsaliyeleri_screen.dart': ["ErpSekmeService.ac('yeni_satis_irsaliyesi');"],
+              'lib/screens/alis_irsaliyeleri_screen.dart': ["ErpSekmeService.ac('yeni_alis_irsaliyesi');"],
+              'lib/screens/siparisler_screen.dart': ["ErpSekmeService.ac('yeni_satis_siparisi');"],
+              'lib/screens/alis_siparisleri_screen.dart': ["ErpSekmeService.ac('yeni_alis_siparisi');"],
+              'lib/screens/satis_faturalari_sayfasi.dart': ["ErpSekmeService.ac('yeni_satis_faturasi');"],
+              'lib/screens/alis_faturalari_sayfasi.dart': ["ErpSekmeService.ac('yeni_alis_faturasi');"],
+          }
+          for fn, needles in checks.items():
+              text = Path(fn).read_text(encoding='utf-8')
+              for needle in needles:
+                  assert needle in text, (fn, needle)
+              print('OK', fn)
+          PY
+
+      - name: Gercek kaynak commitini olustur
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add lib/screens/dashboard_sayfasi.dart \
+                  lib/screens/satis_irsaliyeleri_screen.dart \
+                  lib/screens/alis_irsaliyeleri_screen.dart \
+                  lib/screens/siparisler_screen.dart \
+                  lib/screens/alis_siparisleri_screen.dart \
+                  lib/screens/satis_faturalari_sayfasi.dart \
+                  lib/screens/alis_faturalari_sayfasi.dart
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'Kaynak kod zaten guncel.'
+            exit 0
+          fi
+          git commit -m 'Belge olusturma ekranlarini gercek ERP sekmelerine bagla'
+          git push origin HEAD:main
